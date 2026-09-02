@@ -30,7 +30,7 @@ questions: *what does this do?* and *why is it written this way and not some oth
 - [9. Package `ludot.game`](#9-package-ludotgame)
 - [10. Package `ludot.ui`](#10-package-ludotui)
 - [11. Wiring it all together](#11-wiring-it-all-together)
-- [12. Four worked traces from a real game](#12-four-worked-traces-from-a-real-game)
+- [12. Five worked traces from real games](#12-five-worked-traces-from-real-games)
 - [13. The test harness](#13-the-test-harness)
 - [14. Viva preparation](#14-viva-preparation)
 
@@ -48,8 +48,9 @@ Throughout, a box like this one flags the interesting part:
 > **Why this way?** The answer to "couldn't you have just…", which is the question you will actually
 > be asked.
 
-Code is quoted exactly as it appears in `src/`. Where a method is long it is broken into chunks with
-the explanation between them.
+Code is quoted **exactly** as it appears in `src/` — this was checked mechanically, line by line,
+against the source. Where a method is long it is broken into chunks with the explanation between them,
+and a lone `...` marks a passage skipped as uninteresting (a field assignment, a plain getter).
 
 ### The 36 classes at a glance
 
@@ -63,7 +64,7 @@ src/
       PieceColour.java            the 4 colours; each knows its own X and approach cell
       Direction.java              clockwise / counter-clockwise, and what each implies
       BoardGeometry.java          the board's fixed numbers (52, 5, 4, Alpha/Beta/Gamma)
-      Square.java                 an immutable "where is this?" value; 72 shared instances
+      Square.java                 an immutable "where is this?" value; 80 shared instances
       Board.java                  the occupancy index and every block question
 
     piece/                        WHAT a piece knows about itself
@@ -576,12 +577,12 @@ cells because the ring genuinely has no owner — that is a fact about the board
 key, returned from a method and logged with no possibility that some other part of the program
 mutates it behind your back.
 
-#### The 72 shared instances (Flyweight)
+#### The 80 shared instances (Flyweight)
 
 ```java
     /*
-     * A LUDO-T board contains exactly 72 distinct squares: 52 shared standard cells plus a base, a
-     * five-cell home straight and a home for each of the four colours. Since a Square is immutable,
+     * A LUDO-T board contains exactly 80 distinct squares: the 52 shared standard cells, plus a base,
+     * a five-cell home straight and a home for each of the four colours (52 + 4 x 7). Since a Square is immutable,
      * every one of them can be created once, up front, and shared by everybody who refers to it -
      * the Flyweight pattern. Walking a path then costs no object allocation at all, and identical
      * squares are also identical objects, which makes comparing them as cheap as it can be.
@@ -608,8 +609,9 @@ mutates it behind your back.
     }
 ```
 
-The `static { … }` block runs once, the first time the class is touched, and builds all 72 squares:
-52 ring + 4 × (5 + 1 + 1) = 52 + 28 = **72**.
+The `static { … }` block runs once, the first time the class is touched, and builds all 80 squares:
+52 ring cells, plus for each of the four colours a home straight of 5, a base and a home —
+52 + 4 × (5 + 1 + 1) = 52 + 28 = **80**.
 
 `EnumMap` rather than `HashMap` because the keys are enum constants: an `EnumMap` is internally just
 an array indexed by `ordinal()`, so lookups are array accesses with no hashing at all.
@@ -1025,7 +1027,7 @@ It is also what the required message *"[Color X] player now has [N]/4 on pieces 
 
 `occupantsAt` is the only private helper, and `computeIfAbsent` is what keeps every other method
 short: no caller ever has to check whether a cell has a list yet. The map therefore grows lazily and
-tops out at 72 entries.
+tops out at 80 entries.
 
 ---
 
@@ -1856,7 +1858,9 @@ Three genuinely different endings, and the caller must handle all three differen
         private final Piece blockingPiece;
 
         private Walk(Outcome outcome, Square destination, int stepsTaken, int approachArrivals,
-                Piece blockingPiece) { ... }
+                Piece blockingPiece) {
+            ...
+        }
 ```
 
 An immutable result object with a `private` constructor — only `PathResolver` can create one, so a
@@ -3310,7 +3314,7 @@ means every single option breaks a block, i.e. the roll cannot be played any oth
 rule's condition, established by exhaustion rather than by a separate test.
 
 > **Does this actually behave like a blocker?** Measurably yes. Over 40 seeded games green moved blocks
-> **2369** times; red, yellow and blue managed 44, 29 and 17 between them. The ladder produces the
+> **2076** times; red, yellow and blue managed 28, 28 and 26 respectively. The ladder produces the
 > intended personality.
 
 ### 8.4 `YellowPlayer` — the racer
@@ -3988,3 +3992,530 @@ Section 3's *"After each round, status of each player has to be shown"*, plus th
 The mystery cell is advanced **before** the status line is printed, so *"will be at that location for
 the next N values"* shows the freshly-decremented count — and a cell that has just spawned correctly
 reports 4.
+
+---
+
+## 10. Package `ludot.ui`
+
+### `GameLog` — every line the program prints
+
+One class, one method per required message. No other class in the program calls `System.out`.
+
+```java
+public final class GameLog {
+
+    private static final String SEPARATOR = "============================";
+
+    private final PrintStream out;
+
+    public GameLog(PrintStream out) {
+        this.out = out;
+    }
+```
+
+The `PrintStream` is **injected**, not hard-coded to `System.out`. That is what lets `RuleChecks` pass
+a stream backed by a `ByteArrayOutputStream` and run the real rule classes in silence, and it is why
+redirecting a whole game to a file needs no change to any rule class.
+
+A representative method:
+
+```java
+    /**
+     * "[Color X] moves piece X from location L1 to L2 by [value] units in
+     * [clockwise/counter-clockwise] direction."
+     */
+    public void movesPiece(PlannedMove move) {
+        Piece piece = move.primaryPiece();
+        out.printf("%s moves piece %s from location %s to %s by %d units in %s direction.%n",
+                piece.colour().displayName(), piece.name(), move.from().label(),
+                move.destination().label(), move.stepsTaken(), move.direction().displayName());
+    }
+```
+
+Three things worth noticing about the style used throughout:
+
+1. **The javadoc quotes the specification's template**, so a marker can check the format without
+   running anything.
+2. **The method takes a domain object, not strings.** Callers say `log.movesPiece(move)`, not
+   `log.print("red moves piece R1 from...")`. The log decides the wording; the rest of the program
+   just says what happened.
+3. **`%n`, not `\n`.** `%n` emits the platform line separator, so the transcript is correct on Windows
+   as well as on macOS and Linux.
+
+Note where the pieces of the message come from: `move.from().label()` and `move.destination().label()`
+delegate straight to `Square.label()`, so the Legend's `[colour]homepath[n]` format is produced by the
+square itself. `GameLog` never assembles a location out of a number and a colour.
+
+```java
+    /** The end-of-round listing of one player's pieces. */
+    public void pieceLocations(Board board, PieceColour colour) {
+        out.println(SEPARATOR);
+        out.printf("Location of pieces %s%n", colour.displayName());
+        out.println(SEPARATOR);
+        for (Piece piece : board.piecesOf(colour)) {
+            out.printf("Piece %s -> %s.%n", piece.name(), piece.square().label());
+        }
+    }
+```
+
+Section 3's status block. Because it iterates `board.piecesOf(colour)` — the immutable `R1..R4` list —
+the four lines always appear in the same order, and `Square.label()` prints `Base`, `Home` or a cell
+id as appropriate with no branching here.
+
+```java
+    /** "[Color X] piece [name] feels energized, and movement speed doubles." / "...feels sick..." */
+    public void alphaAura(Piece piece, SpeedModifier modifier) {
+        String effect = modifier == SpeedModifier.DOUBLED
+                ? "feels energized, and movement speed doubles"
+                : "feels sick, and movement speed halves";
+        out.printf("%s piece %s %s.%n", piece.colour().displayName(), piece.name(), effect);
+    }
+```
+
+Two required messages sharing one method, because they are the two halves of one Rule T-12 outcome.
+The wording — including the American *"energized"* — is copied exactly from the specification.
+
+#### Messages beyond Section 3
+
+A handful of methods print lines the specification does not require. Each was added because it makes
+the transcript self-explanatory, and they are clearly distinguishable from required output:
+
+| Method | Why it is there |
+|---|---|
+| `announceBoardLayout` | prints the derived cell numbers, so the geometry can be checked against Figure 1 at a glance |
+| `coinTossed` | Rule T-1's toss is a cause; without it a counter-clockwise piece looks like a bug |
+| `movesBlock` | Rule T-4 moves several pieces at once; the required single-piece format cannot express that |
+| `captureEarnsAnotherRoll` | makes Rule T-2's bonus roll visible rather than mysterious |
+| `thirdSixIgnored` | shows Rule 4 being applied rather than a roll silently vanishing |
+| `blockadeMustBeBroken` / `blockadePieceCannotBeMoved` | Rule T-6 is otherwise invisible |
+| `pieceReachedHome` | progress towards Rule 11 |
+| `announceFinalStandings` | Rule 11's "second, third, and fourth places" |
+| `gameStoppedAtRoundLimit` | honesty: says plainly when the safety limit was hit |
+| `introducePlayer`'s behaviour line | names each colour's strategy so the transcript explains itself |
+
+---
+
+## 11. Wiring it all together
+
+### 11.1 `LudoTSimulation` — the composition root
+
+```java
+    public LudoTSimulation(RandomSource randomSource, PrintStream out) {
+        GameLog log = new GameLog(out);
+
+        Board board = new Board();
+        PathResolver pathResolver = new PathResolver(board);
+        MysteryCell mysteryCell = new MysteryCell(board, randomSource);
+
+        Dice dice = new Dice(randomSource);
+        Coin coin = new Coin(randomSource);
+
+        MysteryEffectResolver mysteryEffectResolver =
+                new MysteryEffectResolver(board, randomSource, log);
+        MoveGenerator moveGenerator = new MoveGenerator(board, pathResolver);
+        MoveExecutor moveExecutor =
+                new MoveExecutor(board, coin, mysteryCell, mysteryEffectResolver, log);
+
+        TurnEngine turnEngine =
+                new TurnEngine(board, dice, moveGenerator, moveExecutor, pathResolver, log);
+        List<Player> players = new PlayerFactory(board, pathResolver, mysteryCell).createAll();
+
+        this.game = new LudoGame(board, players, turnEngine,
+                new FirstPlayerSelector(dice, log), mysteryCell, log);
+    }
+```
+
+**Every `new` in the program that matters happens here.** That is what makes constructor injection
+possible everywhere else: no class reaches out for a collaborator, each is handed exactly what it asked
+for, and nothing has a hidden dependency on a global.
+
+The order is bottom-up — things with no dependencies first, then the things that need them:
+
+```
+GameLog          <- out
+Board            <- (nothing)
+PathResolver     <- board
+MysteryCell      <- board, randomSource
+Dice, Coin       <- randomSource
+MysteryEffects   <- board, randomSource, log
+MoveGenerator    <- board, pathResolver
+MoveExecutor     <- board, coin, mysteryCell, mysteryEffects, log
+TurnEngine       <- board, dice, moveGenerator, moveExecutor, pathResolver, log
+players          <- board, pathResolver, mysteryCell
+LudoGame         <- board, players, turnEngine, firstPlayerSelector, mysteryCell, log
+```
+
+Notice that **one** `RandomSource` instance is shared by the dice, the coin, the mystery cell and the
+teleport resolver. That is deliberate: a single stream of random numbers means a seed reproduces the
+entire game, including which teleport was drawn in round 137.
+
+```java
+    /** Convenience constructor: a reproducible game printed to standard output. */
+    public LudoTSimulation(long seed) {
+        this(new SeededRandomSource(seed), System.out);
+    }
+
+    public void run() {
+        game.play();
+    }
+```
+
+The two parameters of the main constructor are exactly the two things a test wants to control — chance
+and output — which is not a coincidence.
+
+### 11.2 `Main`
+
+```java
+    public static void main(String[] args) {
+        LudoTSimulation simulation = args.length > 0
+                ? new LudoTSimulation(new SeededRandomSource(Long.parseLong(args[0])), System.out)
+                : new LudoTSimulation(new SeededRandomSource(), System.out);
+        simulation.run();
+    }
+```
+
+Six lines of real work. An optional argument is a seed; no argument means a fresh game. `Main` is in
+the default package so the command line is simply `java -cp out Main`, and its private constructor
+stops anyone instantiating it.
+
+---
+
+## 12. Five worked traces from real games
+
+All output below is genuine, copied from real runs — the seed is named for each excerpt, so every one
+of them can be reproduced with `java -cp out Main <seed>`. Following these end to end is the fastest
+way to see the whole program working.
+
+### Trace 1 — leaving the base: Rules 2, T-1 and 4
+
+```
+green player rolled 6.
+green player moves piece G1 to the starting point.
+green player now has 1/4 on pieces on the board and 3/4 pieces on the base.
+The coin toss for green piece G1 is tails, so it will move in a counter-clockwise direction.
+green player rolled 1.
+green moves piece G1 from location 39 to 38 by 1 units in counter-clockwise direction.
+```
+
+What happened, line by line:
+
+1. `TurnEngine.playTurn` calls `dice.roll()` → 6, and `log.diceRolled` prints it.
+2. `consecutiveSixes` becomes 1 — below the limit of 3, so play continues.
+3. `MoveGenerator.optionsFor(GREEN, 6)`:
+   - `addEnterBoardMove` fires because the roll **is** 6 (Rule 2), green has pieces in its base, and
+     no opponent block sits on cell 39. It produces one `ENTER_BOARD` move with `direction = null`.
+   - `addSinglePieceMoves` and `addBlockMoves` add nothing — green has nothing on the board yet.
+4. `GreenPlayer.selectMove`: level 1 finds no block-creating move (there is only the one option, and
+   `createsBlock` is false for it), so level 2's `enterBoardMove` returns it.
+5. `MoveExecutor.execute` sees `isEnteringBoard()` and calls `enterBoard`:
+   - `board.relocate(G1, Square.ring(39))` — **green's start cell is 39**, exactly as derived in
+     section 2;
+   - the two required messages print;
+   - `coin.toss()` returns `TAILS`, so `assignStartingDirection(COUNTER_CLOCKWISE)` sets **both**
+     `direction` and `initialDirection` (arming Rule T-5 for the rest of G1's life).
+6. Back in `playTurn`: the roll was a six, so `earnedAnotherRoll` is true — **Rule 4's second roll**.
+7. The second roll is 1. G1 walks counter-clockwise: `Direction.nextRingCell(39)` = `wrapRing(38)` =
+   **38**. Had G1 been at cell 0, the same call would have given `wrapRing(-1) = 51` — which is what
+   the doubled modulo in `wrapRing` is for.
+
+### Trace 2 — a capture and Rule T-2's bonus roll
+
+```
+red piece R1 lands on square 43, captures blue piece B1, and returns it to the base.
+blue player now has 0/4 on pieces on the board and 4/4 pieces on the base.
+red player now has 1/4 on pieces on the board and 3/4 pieces on the base.
+red captured an opponent piece and receives another roll (Rule T-2).
+red player rolled 2.
+red moves piece R1 from location 43 to 45 by 2 units in clockwise direction.
+```
+
+1. During generation, `PathResolver.walk` reached cell 43 on its final step. `blockerAt` found a blue
+   group of size **1** there — below `MINIMUM_BLOCK_SIZE`, so not a blocker (Rule 5 says a lone piece
+   can be jumped; Rule 6 says it can be captured).
+2. `capturesOnLanding(Square.ring(43), RED)` returned `[B1]`, so the `PlannedMove` carries it.
+3. `RedPlayer.selectMove` step 1: `capturingMoves` is non-empty, so red captures — **before** even
+   considering a base entry. That is red's defining trait.
+4. `MoveExecutor.applyCaptures`:
+   - `board.relocate(B1, Square.base(BLUE))` — Rule 6, back to base;
+   - `B1.resetAfterCapture()` — **Rule T-9**, wiping B1's direction, captures, approach passes and any
+     Alpha/Beta timers;
+   - `R1.recordCapture()` — R1's count goes to 1, so `hasEarnedHomeStraightEntry()` is now `true` and
+     **Rule T-7's gate is open** for R1 for the rest of the game.
+5. `execute` returns `true`, so `TurnEngine` prints the Rule T-2 line and rolls again.
+6. The bonus roll is 2. Note it also **reset `consecutiveSixes` to 0** — the streak is per roll, and a
+   2 breaks it.
+
+### Trace 3 — Rule T-3, and the "cell before the block" fall-back
+
+```
+red player rolled 2.
+red piece R1 is blocked from moving from 50 to 0 by yellow piece Y2.
+red does not have other pieces in the board to move instead of the blocked piece. Moved the piece to square 51 which is the cell before the block.
+red moves piece R1 from location 50 to 51 by 1 units in clockwise direction.
+```
+
+R1 is on cell 50 moving clockwise with a roll of 2, and yellow holds a block on cell 0.
+
+1. `walk(R1, CLOCKWISE, 2, 1)`:
+   - **step 1** → cell 51. `blockerAt(51, RED, 1, isFinalStep=false)` finds nothing.
+     `furthestReached = 51`, `stepsToFurthestReached = 1`.
+   - **step 2** → cell 0. `blockerAt(0, RED, 1, isFinalStep=true)` finds a yellow group of size 2.
+     The Rule T-8 exception needs `opponentGroupSize == groupSize`, i.e. `2 == 1` — false. So Y2 is
+     returned as the blocker.
+   - Returns `BLOCKED` with `destination = 51`.
+2. `blockedAttempt` builds the report: `destinationIgnoringBlocks` walks the same two steps with no
+   block checks and returns cell **0** — the `L2` of the message. `partialMove` is built because
+   `walk.destination()` is not `null`, ending on **51**.
+3. `optionsFor` returns **no playable moves** and one blocked attempt.
+4. `chooseMove` returns `null` (empty playable list), so `handleRollThatCannotBePlayed` runs:
+   `hasBlockedAttempt()` is true, `hasPartialMove()` is true → the shortened move is played.
+5. Three messages result, which are exactly the Section 3 sequence for this case.
+
+> Had yellow's block been on cell **51** instead — immediately in front of R1 — then step 1 would have
+> been blocked, `furthestReached` would still be `null`, `hasPartialMove()` would be `false`, and the
+> output would end with *"Ignoring the throw and moving on to the next player."* instead.
+
+### Trace 4 — the mystery cell, and Gamma forwarding to Beta
+
+```
+yellow player rolled 6.
+yellow moves piece Y1 from location 31 to 25 by 6 units in counter-clockwise direction.
+yellow player lands on a mystery cell and is teleported to Gamma.
+yellow piece Y1 teleported to Gamma.
+The yellow piece Y1 is moving in a counterclockwise direction. Teleporting to Beta from Gamma.
+yellow piece Y1 teleported to Beta.
+yellow piece Y1 attends briefing and cannot move for four rounds.
+yellow player rolled 3.
+```
+
+Y1 walks counter-clockwise from 31 to 25 (`31 - 6 = 25`), and the mystery cell happens to be on 25.
+
+1. `MoveExecutor.execute` completes the walk and calls `applyCaptures` (nothing there to capture).
+2. `mysteryCell.isOn(Square.ring(25))` is true, so
+   `mysteryEffectResolver.resolveLandingOnMysteryCell(Y1)` runs.
+3. `randomSource.pick(DESTINATIONS)` draws **GAMMA** (Rule T-11's third option).
+4. `teleport` moves Y1 to `Square.ring(BoardGeometry.GAMMA_CELL)` = **cell 44** — the value derived in
+   section 2.5. Neither the BASE reset nor the approach-pass branch applies.
+5. `applyDestinationEffect` dispatches to `applyGammaClarification`, and Y1 is moving
+   **counter-clockwise**, so Rule T-14's second half applies: *"it would be teleported to Beta"*.
+6. `teleport(Y1, BETA)` moves it to **cell 25** — which, by coincidence, is the cell it just landed on.
+   Then `applyBetaBriefing` sets `briefingRoundsRemaining = 4`.
+7. From here on, `MoveGenerator.addSinglePieceMoves` skips Y1 for four rounds because
+   `isAttendingBriefing()` is true. The very next line shows yellow rolling a 3 — the beginning of a
+   possible **Rule T-13 escape** if the next roll is also a 3.
+
+Two things this trace demonstrates that are easy to get wrong:
+
+- **The chain is bounded.** Gamma can forward to Beta, but Beta cannot forward anywhere, so the
+  recursion depth is at most 2.
+- **Rule T-15 is respected.** Y1's effects fired because it was *teleported* to Gamma. A piece that
+  merely walked onto cell 44 would trigger nothing, because `applyDestinationEffect` is private and
+  reachable only from `resolveLandingOnMysteryCell`.
+
+### Trace 5 — Rules T-4, T-6 and T-13
+
+A block of three moving together (seed 7):
+
+```
+green player rolled 3.
+green moves its block of 3 pieces (G1, G3, G4) from location 39 to 38 by 1 units in counter-clockwise direction.
+
+green player rolled 6.
+green moves its block of 3 pieces (G1, G3, G4) from location 38 to 36 by 2 units in counter-clockwise direction.
+```
+
+`3 / 3 = 1` cell, then `6 / 3 = 2` cells — Rule T-4's division, visible twice. The names print in
+`G1, G3, G4` order because `Board.groupOn` sorts by piece number, which is also why `G1` is the piece
+`directionSettingPieceOf` consults when the directions agree.
+
+A forced break-up (seed 3):
+
+```
+red rolled a six three times in a row and holds a blockade of 2 pieces on square 23, which must now be broken (Rule T-6).
+red moves piece R2 from location 23 to 17 by 6 units in counter-clockwise direction.
+```
+
+1. `consecutiveSixes` hit 3, so `handleThirdConsecutiveSix` ran instead of playing the roll.
+2. `blockSquaresOf(RED)` found cell 23, holding two pieces — so Rule 4's "just ignore it" does not
+   apply and Rule T-6 takes over.
+3. `piecesLeavingTheBlockade` sorted the pair by distance to home and dropped the closest, leaving
+   **R2** to move.
+4. `6 / 1 = 6` cells — with only one piece leaving, it takes the whole six.
+5. `forcedMove(R2, R2.initialDirection(), 6)` — note **`initialDirection`**, Rule T-6's "original
+   direction", which is counter-clockwise here: `23 - 6 = 17`.
+
+And a Rule T-13 escape (seed 17):
+
+```
+green piece G2 is movement-restricted and has rolled three consecutively. Teleporting piece G2 to base.
+green moves its block of 2 pieces (G1, G4) from location 1 to 0 by 1 units in counter-clockwise direction.
+```
+
+Green had just rolled its second 3 in a row, so `recordRoll(3)` pushed the streak to 2 — reaching
+`CONSECUTIVE_THREES_TO_LEAVE_BRIEFING` — and `releaseBriefedPiecesOnConsecutiveThrees` sent G2 back to
+its base and reset it. The roll was then still played normally, by a block move: the escape happens
+*before* the move, not instead of it.
+
+---
+
+## 13. The test harness
+
+`test/RuleChecks.java` needs no test framework:
+
+```java
+    private static void expect(String description, Object expected, Object actual) {
+        checksRun++;
+        boolean passed = expected == null ? actual == null : expected.equals(actual);
+        if (!passed) {
+            checksFailed++;
+            System.out.printf("FAIL  %s%n        expected <%s> but was <%s>%n", description,
+                    expected, actual);
+        } else {
+            System.out.printf("pass  %s%n", description);
+        }
+    }
+```
+
+One assertion helper, a counter, and a non-zero exit if anything failed. The descriptions read as
+sentences (`"a clockwise piece is 56 cells from home at X"`) so the output is a readable specification.
+
+The setup helper is what makes exact positions possible:
+
+```java
+    /** Puts a piece on a standard cell with a direction and a capture history. */
+    private static Piece place(Board board, PieceColour colour, int number, int cell,
+            Direction direction, int captures) {
+        Piece piece = board.piecesOf(colour).get(number - 1);
+        board.relocate(piece, Square.ring(cell));
+        piece.assignStartingDirection(direction);
+        for (int index = 0; index < captures; index++) {
+            piece.recordCapture();
+        }
+        return piece;
+    }
+```
+
+It uses the **real** `Board.relocate`, so the occupancy index is correct and the block rules see what
+they would see in a game. The `captures` parameter exists purely so a test can satisfy or deliberately
+violate Rule T-7.
+
+Forcing a random outcome is a five-line anonymous class:
+
+```java
+        // A random source that always answers "the third option", i.e. Gamma of the six.
+        RandomSource alwaysGamma = new RandomSource() {
+            @Override
+            public int nextInt(int boundExclusive) {
+                return 2;
+            }
+
+            @Override
+            public boolean nextBoolean() {
+                return true;
+            }
+        };
+```
+
+This is the payoff of the `RandomSource` interface. The test then runs the **real**
+`MysteryEffectResolver` and asserts that a clockwise piece ends up counter-clockwise on cell 44 and a
+counter-clockwise one ends up briefed on cell 25.
+
+Silence comes for free too:
+
+```java
+    /** A log that throws its output away, so the checks stay readable. */
+    private static GameLog silentLog() {
+        return new GameLog(new PrintStream(new ByteArrayOutputStream()));
+    }
+```
+
+### What the 61 checks cover
+
+| Area | Checks |
+|---|---|
+| board geometry | all four starts, all four approaches, Alpha/Beta/Gamma, `R -> G` turn order |
+| Rule T-1 | the 56-cell clockwise and 60-cell counter-clockwise journeys |
+| Rule T-7 | a piece with no capture walks past its approach cell; with one, it turns in |
+| Rule 10 | exact roll reaches home; a larger roll is `IMPOSSIBLE` |
+| Rule T-3 | **the specification's own worked example**, including "up to cell 3" |
+| Rule 5 | a lone piece is jumped, not blocked |
+| Rule T-8 | an equal blockade captures; a pair may not take a trio |
+| Rule T-4 | `roll / size` division, and the longest-distance direction choice |
+| Rule T-12 | doubling, halving, and expiry after exactly four rounds |
+| Rule T-9 | a captured piece loses position, captures, passes, aura and direction |
+| Rule T-14 | both branches |
+| Rule T-10 | spawn delay, four-round lifetime, never-the-same-cell, never-occupied |
+
+---
+
+## 14. Viva preparation
+
+Likely questions, and short answers you can give from memory.
+
+**Q. Where did the cell numbers come from? The specification has no numbered board.**
+From the Legend's sentence plus Figure 1 — see section 2. The four starts come out 13 apart (0, 13, 26,
+39) and every approach cell is 50 cells in front of its own start. Two independent checks confirm the
+reading: the white cells count to exactly 52, and the derived turn order reproduces the
+specification's only worked example, `R -> G`.
+
+**Q. Why is there a `Square` class instead of just using `int`?**
+Because the board has four different kinds of place with different owners and different lengths. With
+an `int` you can accidentally compare a yellow home-straight index against a blue one, or ask for "the
+next cell" after Home. `Square` makes the kind explicit, so `isApproachCellOf` checks
+`isRing()` before comparing the index — that guard is the bug class the type exists to prevent.
+
+**Q. Which design patterns are used, and where?**
+Template Method (`Player.chooseMove` is `final` and calls abstract `selectMove`), Strategy (the four
+`Player` subclasses, and also `SpeedModifier.apply` / `TeleportDestination.squareFor` as
+behaviour-per-enum-constant), Factory (`PlayerFactory`), Flyweight (`Square`'s 80 shared instances),
+Command (`PlannedMove` — a fully described action, built before it is carried out), and Value Object
+throughout.
+
+**Q. Which SOLID principle would you point at first?**
+Dependency Inversion, because it is the one that pays off visibly: the rules depend on the
+`RandomSource` *interface*, so `java -cp out Main 42` replays a game exactly, and `RuleChecks` drives
+the real rule classes with a scripted stub. Single Responsibility is the one that shaped the design —
+generate / choose / execute as three classes.
+
+**Q. How do you know it is correct?**
+Three ways. 61 deterministic rule checks, including the specification's own Rule T-3 worked example.
+All 30 required Section 3 message formats regex-verified across 60 games. And 200 full seeded games with
+no exceptions, in which the behaviours came out measurably distinct — over 40 games red made the most
+captures (631) and green moved blocks 2076 times against 26–28 for everyone else.
+
+**Q. What is the time complexity?**
+Every bound is a constant, because the board never grows. Occupancy lookup is O(1); one walk is at most
+12 steps; `distanceToHome` is at most 111; generating all options for one roll is about 50 elementary
+steps. A full game averages 210 rounds and about 0.13 s, and the output dominates the cost — the rule
+engine is not measurable at this scale.
+
+**Q. What was the hardest rule to get right?**
+Rule T-1's second half. "A counter-clockwise piece can only enter the home straight if it passes the
+approach cell for the **second** time" means a piece needs a *counter*, not a flag, and that counter has
+to be updated mid-walk — a doubled six travels 12 cells and can pass the approach cell during the
+walk. That is why `PathResolver` threads `piece.approachPasses() + approachArrivals` through every
+step rather than reading the piece's stored value.
+
+**Q. Why does a block move not update each piece's direction?**
+Because Rule T-4 asks whether "a block is created by two pieces moving in the opposite direction". If
+a block move overwrote every member's direction, they would all agree afterwards and the
+mixed-direction clause could never fire again. Leaving each piece's own direction intact also keeps
+Rule T-5 honest, since it restores the piece's coin-toss direction when it leaves the block.
+
+**Q. What happens if nobody can win?**
+It can genuinely happen — the ruleset has no stalemate provision. In one observed game blue held all
+four pieces on cell 0 while red held a block of 2 on cell 1 and green a block of 3 on cell 51: blue
+could not pass either (Rule T-3) and could not capture either (Rule T-8 requires equal sizes). Rather
+than inventing a rule, `GameRules.MAX_ROUNDS` guarantees termination and the program says plainly that
+it stopped, printing the positions reached. Measured over 200 games this happened twice (1%).
+
+**Q. Where are the places you had to interpret the specification?**
+Nine, all listed in `REPORT.md` §6 and each isolated to one named constant or one commented method.
+The two that matter most: Rule T-13's "rolls value three consecutively" (read as two successive
+threes — `GameRules.CONSECUTIVE_THREES_TO_LEAVE_BRIEFING`) and Rule T-6's "six units cumulatively"
+(read as shared out between the moving pieces, the same way Rule T-4 divides a roll).
+
+**Q. If you had to add a fifth player behaviour, what would you change?**
+One new `Player` subclass and one line in `PlayerFactory`. No existing class changes, because
+`TurnEngine` and `LudoGame` only ever see `Player`, and the new behaviour would reuse the existing
+`capturingMoves` / `createsBlock` / `closestToHome` vocabulary.

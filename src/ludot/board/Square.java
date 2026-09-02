@@ -36,8 +36,8 @@ public final class Square {
     private final int index;
 
     /*
-     * A LUDO-T board contains exactly 72 distinct squares: 52 shared standard cells plus a base, a
-     * five-cell home straight and a home for each of the four colours. Since a Square is immutable,
+     * A LUDO-T board contains exactly 80 distinct squares: the 52 shared standard cells, plus a base,
+     * a five-cell home straight and a home for each of the four colours (52 + 4 x 7). Since a Square is immutable,
      * every one of them can be created once, up front, and shared by everybody who refers to it -
      * the Flyweight pattern. Walking a path then costs no object allocation at all, and identical
      * squares are also identical objects, which makes comparing them as cheap as it can be.

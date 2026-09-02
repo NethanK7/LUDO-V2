@@ -79,5 +79,10 @@ which is cells **7**, **25** and **44**.
 Turn order is **yellow → blue → red → green**, matching the specification's *"if R rolled the dice,
 the next player to roll would be G"*.
 
-See `REPORT.md` for the full design report: structures, justification, SOLID and patterns,
-efficiency, the rule-to-class map, and the documented interpretations.
+## Documentation
+
+| File | What it is for |
+|---|---|
+| `README.md` | this file — how to build and run, and where to look first |
+| `REPORT.md` | the design report: structures, justification, SOLID and patterns, efficiency, the rule-to-class map, and the nine documented interpretations |
+| `WALKTHROUGH.md` | a line-by-line explanation of every class and method, plus worked traces from real games — the one to read before explaining or defending the code |
