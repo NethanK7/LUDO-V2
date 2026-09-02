@@ -6,3 +6,9 @@ out/
 .DS_Store
 .idea/
 *.iml
+
+# Submission archives and reports
+*.zip
+REPORT.md
+report.md
+[Rr]eport*.md
