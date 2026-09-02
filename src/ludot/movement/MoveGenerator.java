@@ -57,7 +57,7 @@ public final class MoveGenerator {
      * when it was placed in X", because while it was part of a block it may have been carried along
      * in the block's direction instead of its own.
      */
-    public Direction travelDirectionOf(Piece piece) {
+    private Direction travelDirectionOf(Piece piece) {
         return board.isPartOfBlock(piece) ? piece.initialDirection() : piece.direction();
     }
 
@@ -75,7 +75,7 @@ public final class MoveGenerator {
         if (!walk.isCompleted()) {
             return null;
         }
-        return singlePieceMove(MoveKind.ADVANCE, piece, direction, walk, null);
+        return singlePieceMove(MoveKind.ADVANCE, piece, direction, walk);
     }
 
     /** Rules 2 and 3: only a six brings a piece out of the base, and only onto its own "X". */
@@ -97,7 +97,7 @@ public final class MoveGenerator {
         Piece piece = waitingInBase.get(0);
         PieceMovement movement = new PieceMovement(piece, piece.square(), startSquare, null, 0, 0);
         List<Piece> captured = pathResolver.capturesOnLanding(startSquare, colour);
-        playable.add(new PlannedMove(MoveKind.ENTER_BOARD, List.of(movement), captured, null));
+        playable.add(new PlannedMove(MoveKind.ENTER_BOARD, List.of(movement), captured));
     }
 
     /** Rule 1: each piece already on the board walks the value of the dice on its own. */
@@ -118,7 +118,7 @@ public final class MoveGenerator {
             PathResolver.Walk walk = pathResolver.walk(piece, direction, steps, 1);
             switch (walk.outcome()) {
                 case COMPLETED -> playable.add(
-                        singlePieceMove(MoveKind.ADVANCE, piece, direction, walk, null));
+                        singlePieceMove(MoveKind.ADVANCE, piece, direction, walk));
                 case BLOCKED -> blocked.add(blockedAttempt(piece, direction, steps, walk));
                 case IMPOSSIBLE -> {
                     // Rule 10: the roll is not the exact number needed to finish the home straight.
@@ -160,7 +160,7 @@ public final class MoveGenerator {
                         piece.approachPasses() + walk.approachArrivals()));
             }
             List<Piece> captured = pathResolver.capturesOnLanding(destination, colour);
-            playable.add(new PlannedMove(MoveKind.BLOCK_ADVANCE, movements, captured, null));
+            playable.add(new PlannedMove(MoveKind.BLOCK_ADVANCE, movements, captured));
         }
     }
 
@@ -197,12 +197,12 @@ public final class MoveGenerator {
 
     /** Builds the planned move for one piece that has finished (or partly finished) a walk. */
     private PlannedMove singlePieceMove(MoveKind kind, Piece piece, Direction direction,
-            PathResolver.Walk walk, Piece blockingPiece) {
+            PathResolver.Walk walk) {
         Square destination = walk.destination();
         PieceMovement movement = new PieceMovement(piece, piece.square(), destination, direction,
                 walk.stepsTaken(), piece.approachPasses() + walk.approachArrivals());
         List<Piece> captured = pathResolver.capturesOnLanding(destination, piece.colour());
-        return new PlannedMove(kind, List.of(movement), captured, blockingPiece);
+        return new PlannedMove(kind, List.of(movement), captured);
     }
 
     /**
@@ -214,8 +214,7 @@ public final class MoveGenerator {
         Square intendedDestination = pathResolver.destinationIgnoringBlocks(piece, direction, steps);
         PlannedMove partialMove = walk.destination() == null
                 ? null
-                : singlePieceMove(MoveKind.PARTIAL_ADVANCE, piece, direction, walk,
-                        walk.blockingPiece());
+                : singlePieceMove(MoveKind.PARTIAL_ADVANCE, piece, direction, walk);
         return new BlockedAttempt(piece, piece.square(), intendedDestination, walk.blockingPiece(),
                 partialMove);
     }

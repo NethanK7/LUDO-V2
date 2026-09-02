@@ -61,7 +61,7 @@ public final class RedPlayer extends Player {
      */
     private PlannedMove mostDamagingCapture(List<PlannedMove> captures) {
         PlannedMove best = null;
-        int bestVictimDistance = Integer.MAX_VALUE;
+        int bestVictimDistance = PathResolver.UNREACHABLE;
         for (PlannedMove move : captures) {
             int victimDistance = shortestVictimDistanceToHome(move);
             if (best == null || victimDistance < bestVictimDistance) {
@@ -73,7 +73,7 @@ public final class RedPlayer extends Player {
     }
 
     private int shortestVictimDistanceToHome(PlannedMove move) {
-        int shortest = Integer.MAX_VALUE;
+        int shortest = PathResolver.UNREACHABLE;
         for (Piece victim : move.capturedPieces()) {
             shortest = Math.min(shortest, pathResolver.distanceToHome(victim));
         }

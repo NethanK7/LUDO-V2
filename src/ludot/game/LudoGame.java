@@ -66,7 +66,8 @@ public final class LudoGame {
     /** Section 3: "Before Game Begins" - one introduction line per player. */
     private void introducePlayers() {
         for (PieceColour colour : PieceColour.values()) {
-            log.introducePlayer(colour, board.piecesOf(colour));
+            Player player = players.get(colour);
+            log.introducePlayer(colour, board.piecesOf(colour), player.behaviourSummary());
         }
         log.announceBoardLayout();
         log.blankLine();

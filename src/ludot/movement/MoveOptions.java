@@ -10,7 +10,9 @@ import java.util.List;
  * playable moves; but when there is nothing playable at all it must report
  * <em>"[Color X] does not have other pieces in the board to move instead of the blocked piece"</em>
  * and then either shuffle up to the cell before the block or ignore the throw. Keeping both lists in
- * one returned object lets the turn engine make that decision with a single {@code isEmpty()} test.
+ * one returned object lets the turn engine tell those two situations apart without asking the board
+ * anything more: an empty {@code playableMoves} means "nothing else to move", and
+ * {@link #hasBlockedAttempt()} then says whether a block was the reason.
  */
 public final class MoveOptions {
 
@@ -34,10 +36,5 @@ public final class MoveOptions {
 
     public boolean hasBlockedAttempt() {
         return !blockedAttempts.isEmpty();
-    }
-
-    /** True when the roll simply cannot be used: nothing to move and nothing even blocked. */
-    public boolean isEmpty() {
-        return playableMoves.isEmpty() && blockedAttempts.isEmpty();
     }
 }

@@ -123,7 +123,12 @@ public final class Board {
         return false;
     }
 
-    /** Every square on which {@code colour} currently holds a block, nearest-to-home first. */
+    /**
+     * Every square on which {@code colour} currently holds a block.
+     *
+     * <p>Squares are discovered by scanning the player's four pieces in number order, so the result
+     * is deterministic: the same board position always yields the same list in the same order.
+     */
     public List<Square> blockSquaresOf(PieceColour colour) {
         List<Square> squares = new ArrayList<>();
         for (Piece piece : piecesOf(colour)) {

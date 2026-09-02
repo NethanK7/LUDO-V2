@@ -93,10 +93,6 @@ public final class Square {
         return HOME_SQUARES.get(owner);
     }
 
-    public Kind kind() {
-        return kind;
-    }
-
     /** Cell index inside this square's kind: 0..51 on the ring, 0..4 in a home straight. */
     public int index() {
         return index;
@@ -149,6 +145,11 @@ public final class Square {
         return kind == that.kind && owner == that.owner && index == that.index;
     }
 
+    /**
+     * Required because {@code Board} uses squares as hash-map keys: two squares that are
+     * {@code equals} must return the same hash. It is never called by this program's own code - the
+     * JDK's {@code HashMap} calls it.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(kind, owner, index);

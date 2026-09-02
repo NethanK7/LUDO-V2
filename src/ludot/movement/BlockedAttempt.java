@@ -1,6 +1,5 @@
 package ludot.movement;
 
-import ludot.board.Direction;
 import ludot.board.Square;
 import ludot.piece.Piece;
 
@@ -45,10 +44,6 @@ public final class BlockedAttempt {
     /** One of the pieces forming the offending block; named in the status message. */
     public Piece blockingPiece() {
         return blockingPiece;
-    }
-
-    public Direction direction() {
-        return piece.direction();
     }
 
     /** True when the piece can at least advance up to the cell before the block. */

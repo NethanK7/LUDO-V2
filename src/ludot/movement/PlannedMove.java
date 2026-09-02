@@ -21,18 +21,11 @@ public final class PlannedMove {
     private final MoveKind kind;
     private final List<PieceMovement> movements;
     private final List<Piece> capturedPieces;
-    private final Piece blockingPiece;
 
-    public PlannedMove(MoveKind kind, List<PieceMovement> movements, List<Piece> capturedPieces,
-            Piece blockingPiece) {
+    public PlannedMove(MoveKind kind, List<PieceMovement> movements, List<Piece> capturedPieces) {
         this.kind = kind;
         this.movements = List.copyOf(movements);
         this.capturedPieces = List.copyOf(capturedPieces);
-        this.blockingPiece = blockingPiece;
-    }
-
-    public MoveKind kind() {
-        return kind;
     }
 
     /** Every piece this move relocates: one piece normally, the whole block for Rule T-4. */
@@ -69,11 +62,6 @@ public final class PlannedMove {
 
     public boolean capturesAnything() {
         return !capturedPieces.isEmpty();
-    }
-
-    /** The opponent block that cut a {@link MoveKind#PARTIAL_ADVANCE} short, if any. */
-    public Piece blockingPiece() {
-        return blockingPiece;
     }
 
     public boolean isEnteringBoard() {

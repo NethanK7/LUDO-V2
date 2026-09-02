@@ -61,14 +61,21 @@ public final class Piece {
     }
 
     /**
-     * Moves the piece's own record of where it stands.
+     * Overwrites the piece's own record of where it stands.
      *
-     * <p>Package-visible on purpose is not possible across packages, so this stays public, but it is
-     * only ever called by {@code Board}, which keeps its cell index in step with it.
+     * <p><b>Do not call this directly.</b> It exists only so that {@code Board.relocate} can move a
+     * piece and update its occupancy index in the same operation. Java has no "visible to one other
+     * package" access level, so the restriction is stated here rather than enforced by the compiler.
      */
     public void setSquare(Square square) {
         this.square = square;
     }
+
+    /*
+     * One predicate per kind of place, so callers never have to reach through to the Square. The
+     * four mirror Square.Kind exactly, and isInPlay() below is the one the movement code really
+     * wants: "is this piece somewhere it can be asked to move from?".
+     */
 
     public boolean isInBase() {
         return square.isBase();

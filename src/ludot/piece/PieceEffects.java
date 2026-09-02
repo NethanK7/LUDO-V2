@@ -34,13 +34,14 @@ public final class PieceEffects {
         return briefingRoundsRemaining > 0;
     }
 
-    public SpeedModifier activeSpeedModifier() {
-        return speedRoundsRemaining > 0 ? speedModifier : SpeedModifier.NORMAL;
-    }
-
     /** Turns a dice face value into the distance this particular piece travels. */
     public int adjustRoll(int rollValue) {
         return activeSpeedModifier().apply(rollValue);
+    }
+
+    /** The aura currently in force, which is NORMAL again once its four rounds have run out. */
+    private SpeedModifier activeSpeedModifier() {
+        return speedRoundsRemaining > 0 ? speedModifier : SpeedModifier.NORMAL;
     }
 
     /** Advances both countdowns by one round. Called once per round for every piece. */

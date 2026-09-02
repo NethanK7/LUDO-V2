@@ -34,11 +34,17 @@ public final class GameLog {
 
     // ---------------------------------------------------------------- before the game begins
 
-    /** "The red player has four (04) pieces named R1, R2, R3, and R4." */
-    public void introducePlayer(PieceColour colour, List<Piece> pieces) {
+    /**
+     * "The red player has four (04) pieces named R1, R2, R3, and R4."
+     *
+     * <p>The behaviour line underneath is not required by Section 3, but it makes the transcript
+     * self-explanatory: a reader can see why red keeps hunting captures without reading any code.
+     */
+    public void introducePlayer(PieceColour colour, List<Piece> pieces, String behaviourSummary) {
         out.printf("The %s player has four (04) pieces named %s, %s, %s, and %s.%n",
                 colour.displayName(), pieces.get(0).name(), pieces.get(1).name(),
                 pieces.get(2).name(), pieces.get(3).name());
+        out.printf("  Behaviour: %s.%n", behaviourSummary);
     }
 
     public void announceBoardLayout() {

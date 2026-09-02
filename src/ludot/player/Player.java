@@ -45,10 +45,6 @@ public abstract class Player {
         return colour;
     }
 
-    public final List<Piece> pieces() {
-        return board.piecesOf(colour);
-    }
-
     /** A one-line description of this behaviour, printed when the game introduces the players. */
     public abstract String behaviourSummary();
 
@@ -146,7 +142,7 @@ public abstract class Player {
      */
     protected final PlannedMove closestToHome(List<PlannedMove> options) {
         PlannedMove best = null;
-        int bestDistance = Integer.MAX_VALUE;
+        int bestDistance = PathResolver.UNREACHABLE;
         for (PlannedMove move : options) {
             int distance = pathResolver.distanceToHome(move.primaryPiece());
             if (best == null || distance < bestDistance) {
