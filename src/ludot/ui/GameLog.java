@@ -174,6 +174,12 @@ public final class GameLog {
                 colour.displayName(), pieceCount, blockSquareLabel);
     }
 
+    /** Rule T-6: the forced break-up cannot be played because the way is blocked or too short. */
+    public void blockadePieceCannotBeMoved(Piece piece, int units) {
+        out.printf("%s piece %s cannot be moved %d units out of the blockade, so it stays where it "
+                + "is.%n", piece.colour().displayName(), piece.name(), units);
+    }
+
     public void thirdSixIgnored(PieceColour colour) {
         out.printf("%s rolled a six for the third consecutive time, so the roll is ignored and the "
                 + "dice passes to the next player.%n", colour.displayName());

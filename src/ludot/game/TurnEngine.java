@@ -171,7 +171,7 @@ public final class TurnEngine {
         for (Piece piece : leaving) {
             PlannedMove move = moveGenerator.forcedMove(piece, piece.initialDirection(), stepsEach);
             if (move == null) {
-                log.rollCannotBeUsed(player.colour());
+                log.blockadePieceCannotBeMoved(piece, stepsEach);
                 continue;
             }
             applyMove(player, move);

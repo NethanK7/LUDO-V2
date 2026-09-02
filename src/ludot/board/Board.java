@@ -2,6 +2,7 @@ package ludot.board;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +24,9 @@ public final class Board {
 
     /** Two or more pieces of the same player on one cell form a "block" (Rule T-3). */
     public static final int MINIMUM_BLOCK_SIZE = 2;
+
+    private static final Comparator<Piece> BY_PIECE_NUMBER =
+            Comparator.comparingInt(Piece::number);
 
     private final Map<PieceColour, List<Piece>> piecesByColour = new EnumMap<>(PieceColour.class);
     private final Map<Square, List<Piece>> occupants = new LinkedHashMap<>();
@@ -73,10 +77,16 @@ public final class Board {
         for (Piece piece : occupantsAt(square)) {
             groups.computeIfAbsent(piece.colour(), colour -> new ArrayList<>()).add(piece);
         }
+        groups.values().forEach(group -> group.sort(BY_PIECE_NUMBER));
         return groups;
     }
 
-    /** The pieces of one colour standing on one square, e.g. to measure the size of a block. */
+    /**
+     * The pieces of one colour standing on one square, e.g. to measure the size of a block.
+     *
+     * <p>The result is ordered by piece number rather than by arrival, so a block always reads as
+     * "G1, G2, G3" and every decision taken over a block is reproducible.
+     */
     public List<Piece> groupOn(Square square, PieceColour colour) {
         List<Piece> group = new ArrayList<>();
         for (Piece piece : occupantsAt(square)) {
@@ -84,6 +94,7 @@ public final class Board {
                 group.add(piece);
             }
         }
+        group.sort(BY_PIECE_NUMBER);
         return group;
     }
 
