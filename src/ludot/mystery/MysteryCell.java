@@ -2,6 +2,7 @@ package ludot.mystery;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import ludot.board.Board;
 import ludot.board.BoardGeometry;
 import ludot.board.Square;
@@ -19,6 +20,10 @@ import ludot.random.RandomSource;
  *   <li>it never reappears on the cell it has just left.</li>
  * </ul>
  *
+ * <p>"Two rounds have passed" is counted in <em>full</em> rounds: the round in which the first piece
+ * steps onto the standard path is only partly spent with a piece there, so it does not count. A
+ * round counts when it both started and ended with a piece on the path.
+ *
  * <p>Time only advances through {@link #onRoundCompleted()}, which the game calls once at the end of
  * each round, so the whole life cycle can be read top to bottom in one method.
  */
@@ -30,12 +35,15 @@ public final class MysteryCell {
     /** Rule T-10: "it will remain in the same cell for four rounds". */
     public static final int LIFETIME_IN_ROUNDS = 4;
 
+    private static final int NO_CELL = -1;
+
     private final Board board;
     private final RandomSource randomSource;
 
-    private int roundsWithPiecesOnPath;
-    private Integer currentCell;
-    private Integer previousCell;
+    private boolean piecesWereOnPathAtRoundStart;
+    private int fullRoundsWithPiecesOnPath;
+    private int currentCell = NO_CELL;
+    private int previousCell = NO_CELL;
     private int roundsRemaining;
 
     public MysteryCell(Board board, RandomSource randomSource) {
@@ -45,11 +53,14 @@ public final class MysteryCell {
 
     /** True once the mystery cell is somewhere on the board. */
     public boolean isActive() {
-        return currentCell != null;
+        return currentCell != NO_CELL;
     }
 
     /** The standard-path cell it currently occupies. Only meaningful while {@link #isActive()}. */
     public int cell() {
+        if (!isActive()) {
+            throw new IllegalStateException("The mystery cell has not spawned yet");
+        }
         return currentCell;
     }
 
@@ -66,40 +77,41 @@ public final class MysteryCell {
     /**
      * Advances the mystery cell by one round.
      *
-     * @return the cell it has just spawned on, or {@code null} if nothing spawned this round.
+     * @return the cell it has just spawned on, or empty if nothing spawned this round.
      */
-    public Integer onRoundCompleted() {
-        if (board.hasAnyPieceOnRing()) {
-            roundsWithPiecesOnPath++;
+    public OptionalInt onRoundCompleted() {
+        boolean piecesAreOnPath = board.hasAnyPieceOnRing();
+        if (piecesWereOnPathAtRoundStart && piecesAreOnPath) {
+            fullRoundsWithPiecesOnPath++;
         }
+        piecesWereOnPathAtRoundStart = piecesAreOnPath;
 
         if (isActive()) {
             roundsRemaining--;
             if (roundsRemaining > 0) {
-                return null;
+                return OptionalInt.empty();
             }
             previousCell = currentCell;
-            currentCell = null;
+            currentCell = NO_CELL;
             return spawn();
         }
 
-        return roundsWithPiecesOnPath >= ROUNDS_BEFORE_FIRST_SPAWN ? spawn() : null;
+        return fullRoundsWithPiecesOnPath >= ROUNDS_BEFORE_FIRST_SPAWN ? spawn() : OptionalInt.empty();
     }
 
     /** Picks a fresh home for the mystery cell, or leaves it off the board if none is free. */
-    private Integer spawn() {
+    private OptionalInt spawn() {
         List<Integer> candidates = new ArrayList<>();
         for (int cell = 0; cell < BoardGeometry.RING_SIZE; cell++) {
-            boolean sameCellAsBefore = previousCell != null && previousCell == cell;
-            if (!sameCellAsBefore && board.isRingCellEmpty(cell)) {
+            if (cell != previousCell && board.isRingCellEmpty(cell)) {
                 candidates.add(cell);
             }
         }
         if (candidates.isEmpty()) {
-            return null;
+            return OptionalInt.empty();
         }
         currentCell = randomSource.pick(candidates);
         roundsRemaining = LIFETIME_IN_ROUNDS;
-        return currentCell;
+        return OptionalInt.of(currentCell);
     }
 }

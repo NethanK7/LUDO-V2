@@ -3,7 +3,9 @@ package ludot.game;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import ludot.board.Board;
+import ludot.board.Piece;
 import ludot.board.Square;
 import ludot.movement.BlockedAttempt;
 import ludot.movement.MoveExecutor;
@@ -11,10 +13,9 @@ import ludot.movement.MoveGenerator;
 import ludot.movement.MoveOptions;
 import ludot.movement.PathResolver;
 import ludot.movement.PlannedMove;
-import ludot.piece.Piece;
 import ludot.player.Player;
 import ludot.random.Dice;
-import ludot.ui.GameLog;
+import ludot.ui.GameListener;
 
 /**
  * Plays one player's whole turn: the roll, the extra rolls it may earn, and the move it makes.
@@ -32,10 +33,10 @@ public final class TurnEngine {
     private final MoveGenerator moveGenerator;
     private final MoveExecutor moveExecutor;
     private final PathResolver pathResolver;
-    private final GameLog log;
+    private final GameListener log;
 
     public TurnEngine(Board board, Dice dice, MoveGenerator moveGenerator,
-            MoveExecutor moveExecutor, PathResolver pathResolver, GameLog log) {
+            MoveExecutor moveExecutor, PathResolver pathResolver, GameListener log) {
         this.board = board;
         this.dice = dice;
         this.moveGenerator = moveGenerator;
@@ -52,8 +53,7 @@ public final class TurnEngine {
             int value = dice.roll();
             log.diceRolled(player.colour(), value);
 
-            player.recordRoll(value);
-            releaseBriefedPiecesOnConsecutiveThrees(player);
+            releaseBriefedPiecesOnConsecutiveThrees(player, value);
 
             if (value == Dice.SIX) {
                 consecutiveSixes++;
@@ -71,7 +71,8 @@ public final class TurnEngine {
                 log.captureEarnsAnotherRoll(player.colour());
             }
             boolean earnedAnotherRoll = value == Dice.SIX || captured;
-            if (!earnedAnotherRoll) {
+            if (!earnedAnotherRoll || board.hasAllPiecesHome(player.colour())) {
+                // A player whose last piece has just reached home has nothing left to roll for.
                 return;
             }
         }
@@ -84,9 +85,9 @@ public final class TurnEngine {
      */
     private boolean playSingleRoll(Player player, int value) {
         MoveOptions options = moveGenerator.optionsFor(player.colour(), value);
-        PlannedMove chosen = player.chooseMove(options, value);
-        if (chosen != null) {
-            return applyMove(player, chosen);
+        Optional<PlannedMove> chosen = player.chooseMove(options, value);
+        if (chosen.isPresent()) {
+            return applyMove(player, chosen.get());
         }
         return handleRollThatCannotBePlayed(player, options);
     }
@@ -101,11 +102,16 @@ public final class TurnEngine {
             return false;
         }
 
-        BlockedAttempt attempt = options.blockedAttempts().get(0);
+        // A blocked piece that can at least shuffle up to the block is preferred to one that cannot.
+        BlockedAttempt attempt = options.blockedAttempts().stream()
+                .filter(blocked -> blocked.partialMove().isPresent())
+                .findFirst()
+                .orElse(options.blockedAttempts().get(0));
         log.pieceIsBlocked(attempt);
-        if (attempt.hasPartialMove()) {
-            log.blockedButMovedUpToTheBlock(player.colour(), attempt.partialMove());
-            return applyMove(player, attempt.partialMove());
+        if (attempt.partialMove().isPresent()) {
+            PlannedMove partialMove = attempt.partialMove().get();
+            log.blockedButMovedUpToTheBlock(player.colour(), partialMove);
+            return applyMove(player, partialMove);
         }
         log.blockedWithNothingElseToMove(player.colour());
         return false;
@@ -119,24 +125,17 @@ public final class TurnEngine {
 
     /**
      * Rule T-13: "during the next four rounds, the piece will be teleported to the base if the
-     * player rolls value three consecutively."
+     * player rolls value three consecutively." Each briefed piece keeps its own count of the rolls
+     * made since its briefing began.
      */
-    private void releaseBriefedPiecesOnConsecutiveThrees(Player player) {
-        if (player.consecutiveEscapeRolls() < GameRules.CONSECUTIVE_THREES_TO_LEAVE_BRIEFING) {
-            return;
-        }
-
-        boolean anyReleased = false;
+    private void releaseBriefedPiecesOnConsecutiveThrees(Player player, int value) {
         for (Piece piece : board.piecesOf(player.colour())) {
-            if (piece.effects().isAttendingBriefing()) {
+            piece.effects().observeRoll(value);
+            if (piece.effects().mustLeaveBriefingForBase()) {
                 log.briefingEndedByConsecutiveThrees(piece);
                 board.relocate(piece, Square.base(piece.colour()));
                 piece.resetAfterCapture();
-                anyReleased = true;
             }
-        }
-        if (anyReleased) {
-            player.clearConsecutiveEscapeRolls();
         }
     }
 
@@ -163,18 +162,24 @@ public final class TurnEngine {
         }
     }
 
-    /** Moves every piece of the blockade except the one closest to home. */
+    /**
+     * Moves every piece of the blockade except the one closest to home, sharing the six units out
+     * as {@link GameRules#BLOCKADE_BREAK_SHARES} describes so the leaving pieces never land together.
+     */
     private void breakUpBlockade(Player player, List<Piece> blockade) {
         List<Piece> leaving = piecesLeavingTheBlockade(blockade);
-        int stepsEach = GameRules.BLOCKADE_BREAK_UNITS / leaving.size();
+        List<Integer> shares = GameRules.BLOCKADE_BREAK_SHARES.get(leaving.size() - 1);
 
-        for (Piece piece : leaving) {
-            PlannedMove move = moveGenerator.forcedMove(piece, piece.initialDirection(), stepsEach);
-            if (move == null) {
-                log.blockadePieceCannotBeMoved(piece, stepsEach);
+        for (int index = 0; index < leaving.size(); index++) {
+            Piece piece = leaving.get(index);
+            int units = shares.get(index);
+            Optional<PlannedMove> move =
+                    moveGenerator.forcedMove(piece, piece.initialDirection(), units);
+            if (move.isEmpty()) {
+                log.blockadePieceCannotBeMoved(piece, units);
                 continue;
             }
-            applyMove(player, move);
+            applyMove(player, move.get());
         }
     }
 

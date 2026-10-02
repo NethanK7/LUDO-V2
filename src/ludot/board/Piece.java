@@ -1,8 +1,6 @@
-package ludot.piece;
+package ludot.board;
 
-import ludot.board.Direction;
-import ludot.board.PieceColour;
-import ludot.board.Square;
+import ludot.effects.PieceEffects;
 
 /**
  * One of the sixteen pieces in the game, e.g. {@code R1}.
@@ -63,11 +61,10 @@ public final class Piece {
     /**
      * Overwrites the piece's own record of where it stands.
      *
-     * <p><b>Do not call this directly.</b> It exists only so that {@code Board.relocate} can move a
-     * piece and update its occupancy index in the same operation. Java has no "visible to one other
-     * package" access level, so the restriction is stated here rather than enforced by the compiler.
+     * <p>Package-private on purpose: only {@link Board#relocate(Piece, Square)} may call it, so the
+     * board's occupancy index and the piece can never disagree. The compiler enforces that.
      */
-    public void setSquare(Square square) {
+    void setSquare(Square square) {
         this.square = square;
     }
 

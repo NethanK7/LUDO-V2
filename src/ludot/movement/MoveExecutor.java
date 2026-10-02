@@ -3,12 +3,12 @@ package ludot.movement;
 import java.util.ArrayList;
 import java.util.List;
 import ludot.board.Board;
+import ludot.board.Piece;
 import ludot.board.Square;
 import ludot.mystery.MysteryCell;
 import ludot.mystery.MysteryEffectResolver;
-import ludot.piece.Piece;
 import ludot.random.Coin;
-import ludot.ui.GameLog;
+import ludot.ui.GameListener;
 
 /**
  * Carries out the move a player has chosen, and only then changes the board.
@@ -32,10 +32,10 @@ public final class MoveExecutor {
     private final Coin coin;
     private final MysteryCell mysteryCell;
     private final MysteryEffectResolver mysteryEffectResolver;
-    private final GameLog log;
+    private final GameListener log;
 
     public MoveExecutor(Board board, Coin coin, MysteryCell mysteryCell,
-            MysteryEffectResolver mysteryEffectResolver, GameLog log) {
+            MysteryEffectResolver mysteryEffectResolver, GameListener log) {
         this.board = board;
         this.coin = coin;
         this.mysteryCell = mysteryCell;
@@ -123,7 +123,6 @@ public final class MoveExecutor {
             board.relocate(captured, Square.base(captured.colour()));
             captured.resetAfterCapture();
             log.capture(capturer, captured, destination.label());
-            log.playerPieceCounts(board, captured.colour());
         }
 
         if (move.isBlockMove()) {

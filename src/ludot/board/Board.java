@@ -7,7 +7,6 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import ludot.piece.Piece;
 
 /**
  * The board: who is standing where.
@@ -106,21 +105,6 @@ public final class Board {
     /** True when this piece is currently part of one of its own player's blocks. */
     public boolean isPartOfBlock(Piece piece) {
         return piece.isInPlay() && hasBlockOn(piece.square(), piece.colour());
-    }
-
-    /**
-     * True when any opponent of {@code mover} holds a block on {@code square}.
-     *
-     * <p>Rule T-3: "No opponent piece can jump over the block." This is the test used for every cell
-     * a piece travels <em>through</em>.
-     */
-    public boolean isBlockedForTravel(Square square, PieceColour mover) {
-        for (Map.Entry<PieceColour, List<Piece>> group : groupsOn(square).entrySet()) {
-            if (group.getKey() != mover && group.getValue().size() >= MINIMUM_BLOCK_SIZE) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

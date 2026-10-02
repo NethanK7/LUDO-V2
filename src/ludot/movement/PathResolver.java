@@ -3,12 +3,13 @@ package ludot.movement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import ludot.board.Board;
 import ludot.board.BoardGeometry;
 import ludot.board.Direction;
+import ludot.board.Piece;
 import ludot.board.PieceColour;
 import ludot.board.Square;
-import ludot.piece.Piece;
 
 /**
  * Walks the board one cell at a time and reports what happens.
@@ -78,11 +79,11 @@ public final class PathResolver {
 
         /**
          * Where the piece ends up. For {@link Outcome#BLOCKED} this is the furthest cell it could
-         * still reach - "the cell before the block" - and it is {@code null} when the block sits
-         * immediately in front of the piece.
+         * still reach - "the cell before the block" - and it is empty when the block sits
+         * immediately in front of the piece. It is also empty for {@link Outcome#IMPOSSIBLE}.
          */
-        public Square destination() {
-            return destination;
+        public Optional<Square> destination() {
+            return Optional.ofNullable(destination);
         }
 
         public int stepsTaken() {
@@ -94,13 +95,17 @@ public final class PathResolver {
             return approachArrivals;
         }
 
-        /** One of the pieces forming the block that stopped the walk. */
-        public Piece blockingPiece() {
-            return blockingPiece;
+        /** One of the pieces forming the block that stopped the walk; empty unless BLOCKED. */
+        public Optional<Piece> blockingPiece() {
+            return Optional.ofNullable(blockingPiece);
         }
 
         public boolean isCompleted() {
             return outcome == Outcome.COMPLETED;
+        }
+
+        private static Walk impossible() {
+            return new Walk(Outcome.IMPOSSIBLE, null, 0, 0, null);
         }
     }
 
@@ -111,36 +116,52 @@ public final class PathResolver {
     }
 
     /**
-     * Walks {@code piece} {@code steps} cells in {@code direction}, honouring every block rule.
-     *
-     * @param groupSize how many pieces travel together: 1 for a normal move, the size of the block
-     *                  for Rule T-4. It decides whether an opponent blockade may be captured (T-8).
+     * Walks a single {@code piece} {@code steps} cells in {@code direction}, honouring every block
+     * rule.
      */
-    public Walk walk(Piece piece, Direction direction, int steps, int groupSize) {
-        if (!piece.isInPlay() || direction == null || steps <= 0) {
-            return new Walk(Outcome.IMPOSSIBLE, null, 0, 0, null);
+    public Walk walk(Piece piece, Direction direction, int steps) {
+        return walk(List.of(piece), piece, direction, steps);
+    }
+
+    /**
+     * Walks a group of pieces standing on the same square {@code steps} cells as one body.
+     *
+     * <p>A single piece is a group of one. For a block (Rule T-4) the group size decides whether an
+     * opponent blockade may be captured (T-8), and the whole block may turn into the home straight
+     * only when <em>every</em> piece in it is allowed to (Rule T-7): one piece without a capture
+     * keeps the block on the standard path.
+     *
+     * @param leader the piece whose position and approach-cell history the walk starts from.
+     */
+    public Walk walk(List<Piece> group, Piece leader, Direction direction, int steps) {
+        if (!leader.isInPlay() || direction == null || steps <= 0) {
+            return Walk.impossible();
         }
 
-        Square current = piece.square();
+        PieceColour colour = leader.colour();
+        boolean entryEarned = group.stream().allMatch(Piece::hasEarnedHomeStraightEntry);
+        int approachPasses = group.stream().mapToInt(Piece::approachPasses).min().orElse(0);
+        Square current = leader.square();
         int approachArrivals = 0;
         Square furthestReached = null;
         int stepsToFurthestReached = 0;
 
         for (int step = 1; step <= steps; step++) {
-            Square next = nextSquare(current, piece.colour(), direction,
-                    piece.approachPasses() + approachArrivals, piece.hasEarnedHomeStraightEntry());
-            if (next == null) {
-                return new Walk(Outcome.IMPOSSIBLE, null, 0, 0, null);
+            Optional<Square> nextStep = nextSquare(current, colour, direction,
+                    approachPasses + approachArrivals, entryEarned);
+            if (nextStep.isEmpty()) {
+                return Walk.impossible();
             }
+            Square next = nextStep.get();
 
             boolean isFinalStep = step == steps;
-            Piece blocker = blockerAt(next, piece.colour(), groupSize, isFinalStep);
-            if (blocker != null) {
+            Optional<Piece> blocker = blockerAt(next, colour, group.size(), isFinalStep);
+            if (blocker.isPresent()) {
                 return new Walk(Outcome.BLOCKED, furthestReached, stepsToFurthestReached,
-                        approachArrivals, blocker);
+                        approachArrivals, blocker.get());
             }
 
-            if (next.isApproachCellOf(piece.colour())) {
+            if (next.isApproachCellOf(colour)) {
                 approachArrivals++;
             }
             current = next;
@@ -159,11 +180,12 @@ public final class PathResolver {
         Square current = piece.square();
         int approachArrivals = 0;
         for (int step = 1; step <= steps; step++) {
-            Square next = nextSquare(current, piece.colour(), direction,
+            Optional<Square> nextStep = nextSquare(current, piece.colour(), direction,
                     piece.approachPasses() + approachArrivals, piece.hasEarnedHomeStraightEntry());
-            if (next == null) {
+            if (nextStep.isEmpty()) {
                 return current;
             }
+            Square next = nextStep.get();
             if (next.isApproachCellOf(piece.colour())) {
                 approachArrivals++;
             }
@@ -199,11 +221,12 @@ public final class PathResolver {
         Square current = piece.square();
         int approachArrivals = 0;
         for (int steps = 1; steps <= MAXIMUM_JOURNEY_LENGTH; steps++) {
-            Square next = nextSquare(current, piece.colour(), direction,
+            Optional<Square> nextStep = nextSquare(current, piece.colour(), direction,
                     piece.approachPasses() + approachArrivals, true);
-            if (next == null) {
+            if (nextStep.isEmpty()) {
                 return UNREACHABLE;
             }
+            Square next = nextStep.get();
             if (next.isHome()) {
                 return steps;
             }
@@ -233,39 +256,39 @@ public final class PathResolver {
      * One single step.
      *
      * @param entryEarned whether Rule T-7 is satisfied, i.e. the piece has captured at least once.
-     * @return the next square, or {@code null} when the step would carry the piece past home, which
+     * @return the next square, or empty when the step would carry the piece past home, which
      *         Rule 10 turns into "this roll cannot be played by this piece".
      */
-    private Square nextSquare(Square current, PieceColour colour, Direction direction,
+    private Optional<Square> nextSquare(Square current, PieceColour colour, Direction direction,
             int approachPasses, boolean entryEarned) {
         if (current.isHomeStraight()) {
             int nextCell = current.index() + 1;
-            return nextCell < BoardGeometry.HOME_STRAIGHT_LENGTH
+            return Optional.of(nextCell < BoardGeometry.HOME_STRAIGHT_LENGTH
                     ? Square.homeStraight(colour, nextCell)
-                    : Square.home(colour);
+                    : Square.home(colour));
         }
         if (!current.isRing()) {
-            return null;
+            return Optional.empty();
         }
         if (current.isApproachCellOf(colour)
                 && entryEarned && approachPasses >= direction.requiredApproachPasses()) {
-            return Square.homeStraight(colour, 0);
+            return Optional.of(Square.homeStraight(colour, 0));
         }
-        return Square.ring(direction.nextRingCell(current.index()));
+        return Optional.of(Square.ring(direction.nextRingCell(current.index())));
     }
 
     /**
-     * Returns the opponent piece that forbids this square, or {@code null} when the square may be
-     * used.
+     * Returns the opponent piece that forbids this square, or empty when the square may be used.
      *
      * <p>Travelling <em>through</em> a square is refused by any opponent block (Rule T-3). Landing
      * <em>on</em> a square is refused by an opponent block as well, unless the arriving group is a
      * blockade of exactly the same size, which Rule T-8 allows to capture it. A lone opponent piece
      * never blocks anything: it is jumped over (Rule 5) or captured (Rule 6).
      */
-    private Piece blockerAt(Square square, PieceColour mover, int groupSize, boolean isFinalStep) {
+    private Optional<Piece> blockerAt(Square square, PieceColour mover, int groupSize,
+            boolean isFinalStep) {
         if (!square.isRing()) {
-            return null;
+            return Optional.empty();
         }
         for (Map.Entry<PieceColour, List<Piece>> group : board.groupsOn(square).entrySet()) {
             if (group.getKey() == mover) {
@@ -277,9 +300,9 @@ public final class PathResolver {
             }
             boolean blockadeCapturesBlockade = isFinalStep && opponentGroupSize == groupSize;
             if (!blockadeCapturesBlockade) {
-                return group.getValue().get(0);
+                return Optional.of(group.getValue().get(0));
             }
         }
-        return null;
+        return Optional.empty();
     }
 }

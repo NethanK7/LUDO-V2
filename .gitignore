@@ -12,3 +12,9 @@ out/
 REPORT.md
 report.md
 [Rr]eport*.md
+
+# Maven build output
+target/
+
+# Cloned reference repos
+ludo-t/

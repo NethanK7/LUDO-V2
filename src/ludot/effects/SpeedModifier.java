@@ -1,4 +1,4 @@
-package ludot.piece;
+package ludot.effects;
 
 /**
  * The effect of the Alpha aura on how far a piece travels (Rule T-12).

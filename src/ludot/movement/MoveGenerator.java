@@ -2,11 +2,12 @@ package ludot.movement;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import ludot.board.Board;
 import ludot.board.Direction;
+import ludot.board.Piece;
 import ludot.board.PieceColour;
 import ludot.board.Square;
-import ludot.piece.Piece;
 import ludot.random.Dice;
 
 /**
@@ -42,7 +43,7 @@ public final class MoveGenerator {
         List<PlannedMove> playable = new ArrayList<>();
         List<BlockedAttempt> blocked = new ArrayList<>();
 
-        addEnterBoardMove(colour, rollValue, playable);
+        addEnterBoardMove(colour, rollValue, playable, blocked);
         addSinglePieceMoves(colour, rollValue, playable, blocked);
         addBlockMoves(colour, rollValue, playable);
 
@@ -68,18 +69,19 @@ public final class MoveGenerator {
      * blockade must break it up by moving its pieces "in their original direction by six units
      * cumulatively", which is a distance the dice never produced directly.
      *
-     * @return the planned move, or {@code null} when the piece cannot travel that far.
+     * @return the planned move, or empty when the piece cannot travel that far.
      */
-    public PlannedMove forcedMove(Piece piece, Direction direction, int steps) {
-        PathResolver.Walk walk = pathResolver.walk(piece, direction, steps, 1);
+    public Optional<PlannedMove> forcedMove(Piece piece, Direction direction, int steps) {
+        PathResolver.Walk walk = pathResolver.walk(piece, direction, steps);
         if (!walk.isCompleted()) {
-            return null;
+            return Optional.empty();
         }
-        return singlePieceMove(MoveKind.ADVANCE, piece, direction, walk);
+        return Optional.of(singlePieceMove(MoveKind.ADVANCE, piece, direction, walk));
     }
 
     /** Rules 2 and 3: only a six brings a piece out of the base, and only onto its own "X". */
-    private void addEnterBoardMove(PieceColour colour, int rollValue, List<PlannedMove> playable) {
+    private void addEnterBoardMove(PieceColour colour, int rollValue, List<PlannedMove> playable,
+            List<BlockedAttempt> blocked) {
         if (rollValue != Dice.SIX) {
             return;
         }
@@ -87,14 +89,17 @@ public final class MoveGenerator {
         if (waitingInBase.isEmpty()) {
             return;
         }
+        // The pieces waiting in the base are interchangeable, so the lowest numbered one is used.
+        Piece piece = waitingInBase.get(0);
         Square startSquare = Square.ring(colour.startCell());
-        if (board.isBlockedForTravel(startSquare, colour)) {
+        Optional<Piece> blocker = opponentBlockerOn(startSquare, colour);
+        if (blocker.isPresent()) {
             // An opponent block is sitting on "X", so there is nowhere to step out to (Rule T-3).
+            blocked.add(new BlockedAttempt(piece, piece.square(), startSquare, blocker.get(),
+                    Optional.empty()));
             return;
         }
 
-        // The pieces waiting in the base are interchangeable, so the lowest numbered one is used.
-        Piece piece = waitingInBase.get(0);
         PieceMovement movement = new PieceMovement(piece, piece.square(), startSquare, null, 0, 0);
         List<Piece> captured = pathResolver.capturesOnLanding(startSquare, colour);
         playable.add(new PlannedMove(MoveKind.ENTER_BOARD, List.of(movement), captured));
@@ -115,7 +120,7 @@ public final class MoveGenerator {
             }
 
             Direction direction = travelDirectionOf(piece);
-            PathResolver.Walk walk = pathResolver.walk(piece, direction, steps, 1);
+            PathResolver.Walk walk = pathResolver.walk(piece, direction, steps);
             switch (walk.outcome()) {
                 case COMPLETED -> playable.add(
                         singlePieceMove(MoveKind.ADVANCE, piece, direction, walk));
@@ -148,12 +153,12 @@ public final class MoveGenerator {
 
             Piece leader = directionSettingPieceOf(block);
             Direction direction = leader.direction();
-            PathResolver.Walk walk = pathResolver.walk(leader, direction, steps, block.size());
+            PathResolver.Walk walk = pathResolver.walk(block, leader, direction, steps);
             if (!walk.isCompleted()) {
                 continue;
             }
 
-            Square destination = walk.destination();
+            Square destination = walk.destination().orElseThrow();
             List<PieceMovement> movements = new ArrayList<>();
             for (Piece piece : block) {
                 movements.add(new PieceMovement(piece, blockSquare, destination, direction, steps,
@@ -191,6 +196,15 @@ public final class MoveGenerator {
         return leader;
     }
 
+    /** One piece of an opponent block standing on {@code square}, if there is such a block. */
+    private Optional<Piece> opponentBlockerOn(Square square, PieceColour mover) {
+        return board.groupsOn(square).entrySet().stream()
+                .filter(group -> group.getKey() != mover)
+                .filter(group -> group.getValue().size() >= Board.MINIMUM_BLOCK_SIZE)
+                .map(group -> group.getValue().get(0))
+                .findFirst();
+    }
+
     private boolean containsRestrictedPiece(List<Piece> block) {
         return block.stream().anyMatch(piece -> piece.effects().isAttendingBriefing());
     }
@@ -198,7 +212,7 @@ public final class MoveGenerator {
     /** Builds the planned move for one piece that has finished (or partly finished) a walk. */
     private PlannedMove singlePieceMove(MoveKind kind, Piece piece, Direction direction,
             PathResolver.Walk walk) {
-        Square destination = walk.destination();
+        Square destination = walk.destination().orElseThrow();
         PieceMovement movement = new PieceMovement(piece, piece.square(), destination, direction,
                 walk.stepsTaken(), piece.approachPasses() + walk.approachArrivals());
         List<Piece> captured = pathResolver.capturesOnLanding(destination, piece.colour());
@@ -212,10 +226,9 @@ public final class MoveGenerator {
     private BlockedAttempt blockedAttempt(Piece piece, Direction direction, int steps,
             PathResolver.Walk walk) {
         Square intendedDestination = pathResolver.destinationIgnoringBlocks(piece, direction, steps);
-        PlannedMove partialMove = walk.destination() == null
-                ? null
-                : singlePieceMove(MoveKind.PARTIAL_ADVANCE, piece, direction, walk);
-        return new BlockedAttempt(piece, piece.square(), intendedDestination, walk.blockingPiece(),
-                partialMove);
+        Optional<PlannedMove> partialMove = walk.destination()
+                .map(reached -> singlePieceMove(MoveKind.PARTIAL_ADVANCE, piece, direction, walk));
+        return new BlockedAttempt(piece, piece.square(), intendedDestination,
+                walk.blockingPiece().orElseThrow(), partialMove);
     }
 }

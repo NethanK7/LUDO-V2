@@ -2,8 +2,8 @@ package ludot.movement;
 
 import java.util.List;
 import ludot.board.Direction;
+import ludot.board.Piece;
 import ludot.board.Square;
-import ludot.piece.Piece;
 
 /**
  * One complete, legal action a player could take with the roll it has just made.
@@ -15,22 +15,15 @@ import ludot.piece.Piece;
  *
  * <p>{@link MoveGenerator} produces these, the players choose one, and {@link MoveExecutor} is the
  * only class that turns the chosen one into real changes on the board.
+ *
+ * @param movements      every piece this move relocates: one normally, the whole block for T-4.
+ * @param capturedPieces opponent pieces sent back to their base by this move (Rules 6 and T-8).
  */
-public final class PlannedMove {
+public record PlannedMove(MoveKind kind, List<PieceMovement> movements, List<Piece> capturedPieces) {
 
-    private final MoveKind kind;
-    private final List<PieceMovement> movements;
-    private final List<Piece> capturedPieces;
-
-    public PlannedMove(MoveKind kind, List<PieceMovement> movements, List<Piece> capturedPieces) {
-        this.kind = kind;
-        this.movements = List.copyOf(movements);
-        this.capturedPieces = List.copyOf(capturedPieces);
-    }
-
-    /** Every piece this move relocates: one piece normally, the whole block for Rule T-4. */
-    public List<PieceMovement> movements() {
-        return movements;
+    public PlannedMove {
+        movements = List.copyOf(movements);
+        capturedPieces = List.copyOf(capturedPieces);
     }
 
     /** The piece the message log talks about; for a block move, the first piece of the block. */
@@ -55,11 +48,6 @@ public final class PlannedMove {
         return movements.get(0).stepsTaken();
     }
 
-    /** Opponent pieces sent back to their base by this move (Rules 6 and T-8). */
-    public List<Piece> capturedPieces() {
-        return capturedPieces;
-    }
-
     public boolean capturesAnything() {
         return !capturedPieces.isEmpty();
     }
@@ -80,12 +68,6 @@ public final class PlannedMove {
     /** The pieces moved by this move, in board order. */
     public List<Piece> movedPieces() {
         return movements.stream().map(PieceMovement::piece).toList();
-    }
-
-    /** True when the destination is the given standard-path cell (used by the blue strategy). */
-    public boolean landsOnRingCell(int cell) {
-        Square destination = destination();
-        return destination.isRing() && destination.index() == cell;
     }
 
     @Override

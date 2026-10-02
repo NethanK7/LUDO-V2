@@ -3,11 +3,11 @@ package ludot.mystery;
 import java.util.List;
 import ludot.board.Board;
 import ludot.board.Direction;
+import ludot.board.Piece;
 import ludot.board.Square;
-import ludot.piece.Piece;
-import ludot.piece.SpeedModifier;
+import ludot.effects.SpeedModifier;
 import ludot.random.RandomSource;
-import ludot.ui.GameLog;
+import ludot.ui.GameListener;
 
 /**
  * What happens to a piece that lands on the mystery cell (Rules T-11 to T-15).
@@ -35,9 +35,9 @@ public final class MysteryEffectResolver {
 
     private final Board board;
     private final RandomSource randomSource;
-    private final GameLog log;
+    private final GameListener log;
 
-    public MysteryEffectResolver(Board board, RandomSource randomSource, GameLog log) {
+    public MysteryEffectResolver(Board board, RandomSource randomSource, GameListener log) {
         this.board = board;
         this.randomSource = randomSource;
         this.log = log;

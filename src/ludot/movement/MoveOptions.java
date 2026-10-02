@@ -13,25 +13,16 @@ import java.util.List;
  * one returned object lets the turn engine tell those two situations apart without asking the board
  * anything more: an empty {@code playableMoves} means "nothing else to move", and
  * {@link #hasBlockedAttempt()} then says whether a block was the reason.
+ *
+ * @param playableMoves   moves that fully satisfy the rules and may be chosen by the strategy.
+ * @param blockedAttempts moves that an opponent block cut short (Rule T-3), kept for reporting and
+ *                        fall-backs.
  */
-public final class MoveOptions {
+public record MoveOptions(List<PlannedMove> playableMoves, List<BlockedAttempt> blockedAttempts) {
 
-    private final List<PlannedMove> playableMoves;
-    private final List<BlockedAttempt> blockedAttempts;
-
-    public MoveOptions(List<PlannedMove> playableMoves, List<BlockedAttempt> blockedAttempts) {
-        this.playableMoves = List.copyOf(playableMoves);
-        this.blockedAttempts = List.copyOf(blockedAttempts);
-    }
-
-    /** Moves that fully satisfy the rules and may be chosen by the player's strategy. */
-    public List<PlannedMove> playableMoves() {
-        return playableMoves;
-    }
-
-    /** Moves that an opponent block cut short (Rule T-3), kept for reporting and fall-backs. */
-    public List<BlockedAttempt> blockedAttempts() {
-        return blockedAttempts;
+    public MoveOptions {
+        playableMoves = List.copyOf(playableMoves);
+        blockedAttempts = List.copyOf(blockedAttempts);
     }
 
     public boolean hasBlockedAttempt() {

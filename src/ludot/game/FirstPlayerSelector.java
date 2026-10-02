@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import ludot.board.PieceColour;
 import ludot.random.Dice;
-import ludot.ui.GameLog;
+import ludot.ui.GameListener;
 
 /**
  * Decides who starts: "Each player rolls the dice to identify who will be the first to roll. The
@@ -19,9 +19,9 @@ import ludot.ui.GameLog;
 public final class FirstPlayerSelector {
 
     private final Dice dice;
-    private final GameLog log;
+    private final GameListener log;
 
-    public FirstPlayerSelector(Dice dice, GameLog log) {
+    public FirstPlayerSelector(Dice dice, GameListener log) {
         this.dice = dice;
         this.log = log;
     }

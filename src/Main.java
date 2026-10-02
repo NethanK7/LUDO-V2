@@ -18,9 +18,30 @@ public final class Main {
     }
 
     public static void main(String[] args) {
-        LudoTSimulation simulation = args.length > 0
-                ? new LudoTSimulation(new SeededRandomSource(Long.parseLong(args[0])), System.out)
-                : new LudoTSimulation(new SeededRandomSource(), System.out);
-        simulation.run();
+        SeededRandomSource randomSource;
+        try {
+            randomSource = args.length > 0
+                    ? new SeededRandomSource(parseSeed(args[0]))
+                    : new SeededRandomSource();
+        } catch (IllegalArgumentException invalidSeed) {
+            System.err.println(invalidSeed.getMessage());
+            System.err.println("Usage: java -cp out Main [seed]");
+            return;
+        }
+        new LudoTSimulation(randomSource, System.out).run();
+    }
+
+    /**
+     * Reads the optional seed argument.
+     *
+     * @throws IllegalArgumentException with a readable message when it is not a whole number.
+     */
+    static long parseSeed(String argument) {
+        try {
+            return Long.parseLong(argument.trim());
+        } catch (NumberFormatException notANumber) {
+            throw new IllegalArgumentException(
+                    "The seed must be a whole number, but was: \"" + argument + "\"", notANumber);
+        }
     }
 }
