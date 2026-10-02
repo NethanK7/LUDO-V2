@@ -12,6 +12,9 @@ out/
 REPORT.md
 report.md
 [Rr]eport*.md
+WALKTHROUGH.md
+walkthrough.md
+[Ww]alkthrough*.md
 
 # Maven build output
 target/
