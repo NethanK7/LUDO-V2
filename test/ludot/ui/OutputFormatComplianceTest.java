@@ -81,16 +81,6 @@ class OutputFormatComplianceTest {
         }
     }
 
-    @Test
-    void theWinnerIsAnnouncedAndAllFourPlacesAreListed() {
-        String transcript = recordTranscript(42);
-
-        assertEquals(1, transcript.lines().filter(l -> l.endsWith("player wins!!!")).count());
-        for (String place : List.of("1st", "2nd", "3rd", "4th")) {
-            assertEquals(1, transcript.lines().filter(l -> l.startsWith(place + " place: ")).count());
-        }
-    }
-
     private static String recordTranscript(long seed) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         new LudoSimulationFacade(new SeededRandomnessProvider(seed), new PrintStream(bytes)).run();

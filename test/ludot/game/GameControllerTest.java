@@ -62,6 +62,8 @@ class GameControllerTest {
         GameOutcome result = createGame(42).play();
 
         assertEquals(GameOutcome.Ending.ALL_PLACES_DECIDED, result.ending());
+        assertEquals(List.of(PlayerColour.YELLOW, PlayerColour.RED, PlayerColour.BLUE, PlayerColour.GREEN),
+                result.placings());
         verify(listener, times(4)).introducePlayer(any(), any());
         verify(listener).reportFirstPlayer(any());
         verify(listener).announceWinner(result.placings().get(0));
@@ -96,6 +98,19 @@ class GameControllerTest {
         verify(listener).reportGridlock(anyInt(), eq(RuleConstants.GRIDLOCK_ROUNDS), any());
         verify(listener, never()).reportRoundLimitReached(anyInt(), any());
         verify(listener, never()).announceFinalStandings(any());
+    }
+
+    @Test
+    void seed42AlwaysPlaysTheSameGame() {
+        String transcript = recordTranscript(42);
+
+        assertTrue(transcript.contains("yellow rolls 3\nblue rolls 4\nred rolls 1\ngreen rolls 3\n"));
+        assertTrue(transcript.contains("blue player has the highest roll and will begin the game."));
+        assertTrue(transcript.contains("The order of a single round is blue, red, green, and yellow."));
+        assertEquals(1, transcript.lines().filter(line -> line.endsWith("player wins!!!")).count());
+        assertTrue(transcript.contains("yellow player wins!!!"));
+        assertTrue(transcript.endsWith("1st place: yellow\n2nd place: red\n3rd place: blue\n4th place: green\n"));
+        assertEquals(218, transcript.lines().filter(line -> line.equals("Location of pieces yellow")).count());
     }
 
     @Test
