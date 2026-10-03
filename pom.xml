@@ -91,7 +91,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>Main</mainClass>
+                            <mainClass>LudoApplication</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
