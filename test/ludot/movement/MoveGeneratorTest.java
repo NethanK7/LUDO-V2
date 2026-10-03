@@ -2,7 +2,6 @@ package ludot.movement;
 
 import static ludot.Fixtures.place;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -26,7 +25,7 @@ class MoveGeneratorTest {
         MoveOptions options = generator.optionsFor(PieceColour.RED, 5);
 
         assertTrue(options.playableMoves().isEmpty());
-        assertFalse(options.hasBlockedAttempt());
+        assertTrue(options.blockedAttempts().isEmpty());
     }
 
     @Test

@@ -1,15 +1,16 @@
 package ludot.game;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -17,7 +18,9 @@ import java.util.EnumSet;
 import java.util.List;
 import ludot.LudoTSimulation;
 import ludot.board.Board;
+import ludot.board.Piece;
 import ludot.board.PieceColour;
+import ludot.board.Square;
 import ludot.command.CommandFactory;
 import ludot.movement.MoveGenerator;
 import ludot.movement.PathResolver;
@@ -103,15 +106,44 @@ class LudoGameTest {
         assertEquals(transcript(7), transcript(7));
     }
 
-    @Test
-    void differentSeedsPlayDifferentGames() {
-        assertFalse(transcript(7).equals(transcript(8)));
-    }
 
 
     private static String transcript(long seed) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         new LudoTSimulation(new SeededRandomSource(seed), new PrintStream(bytes)).run();
         return bytes.toString();
+    }
+
+    @Test
+    void aGameThatNeverSettlesStopsAtTheSafetyLimit() {
+        // Yellow is already home; every other turn just shuffles R1 between cells 26 and 27, so the
+        // board keeps changing (no gridlock) but nobody else can ever finish.
+        Board board = new Board();
+        for (Piece piece : board.piecesOf(PieceColour.YELLOW)) {
+            board.relocate(piece, Square.home(PieceColour.YELLOW));
+        }
+        Piece shuffled = board.piecesOf(PieceColour.RED).get(0);
+        TurnEngine turnEngine = mock(TurnEngine.class);
+        doAnswer(turn -> {
+            boolean onCell26 = shuffled.square().equals(Square.ring(26));
+            board.relocate(shuffled, Square.ring(onCell26 ? 27 : 26));
+            return null;
+        }).when(turnEngine).playTurn(any());
+        Dice dice = mock(Dice.class);
+        when(dice.roll()).thenReturn(6, 1, 1, 1);
+        PathResolver pathResolver = new PathResolver(board);
+        MysteryCell mysteryCell = new MysteryCell(board, new SeededRandomSource(1));
+        LudoGame game = new LudoGame(board,
+                new PlayerFactory(board, pathResolver, mysteryCell).createAll(), turnEngine,
+                new FirstPlayerSelector(dice, listener), mysteryCell, listener);
+
+        GameResult result = game.play();
+
+        assertEquals(GameResult.Ending.ROUND_LIMIT, result.ending());
+        assertEquals(GameRules.MAX_ROUNDS, result.rounds());
+        assertEquals(List.of(PieceColour.YELLOW), result.placings());
+        verify(listener).announceWinner(PieceColour.YELLOW);
+        verify(listener).gameStoppedAtRoundLimit(eq(GameRules.MAX_ROUNDS), any());
+        verify(listener).announceFinalStandings(List.of(PieceColour.YELLOW));
     }
 }

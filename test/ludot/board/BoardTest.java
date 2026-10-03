@@ -21,6 +21,8 @@ class BoardTest {
             assertTrue(board.piecesInPlay(colour).isEmpty());
         }
         assertFalse(board.hasAnyPieceOnRing());
+        // four pieces share the base, but a base is never a block (T-3 is about the board)
+        assertFalse(board.isPartOfBlock(piece(board, PieceColour.RED, 1)));
     }
 
     @Test
@@ -87,6 +89,8 @@ class BoardTest {
 
         assertEquals(1, board.piecesInPlay(PieceColour.RED).size());
         assertFalse(board.hasAnyPieceOnRing());
+        // four pieces share the base, but a base is never a block (T-3 is about the board)
+        assertFalse(board.isPartOfBlock(piece(board, PieceColour.RED, 1)));
     }
 
     @Test

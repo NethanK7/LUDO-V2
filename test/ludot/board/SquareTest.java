@@ -17,6 +17,7 @@ class SquareTest {
         assertEquals(Square.ring(17).hashCode(), Square.ring(17).hashCode());
         assertEquals(Square.base(PieceColour.BLUE), Square.base(PieceColour.BLUE));
         assertNotEquals(Square.ring(17), Square.ring(18));
+        assertNotEquals(Square.ring(17), "17");
     }
 
     @Test
@@ -40,6 +41,8 @@ class SquareTest {
         assertThrows(IllegalArgumentException.class, () -> Square.ring(-1));
         assertThrows(IllegalArgumentException.class,
                 () -> Square.homeStraight(PieceColour.RED, 5));
+        assertThrows(IllegalArgumentException.class,
+                () -> Square.homeStraight(PieceColour.RED, -1));
     }
 
     @Test
