@@ -8,10 +8,10 @@ import ludot.board.Piece;
 import ludot.board.PieceColour;
 import ludot.effects.SpeedModifier;
 import ludot.movement.BlockedAttempt;
+import ludot.movement.PieceMovement;
 import ludot.movement.PlannedMove;
 import ludot.mystery.MysteryCell;
 import ludot.mystery.TeleportDestination;
-import ludot.random.Coin;
 
 /**
  * Every line the simulation prints.
@@ -39,36 +39,12 @@ public final class GameLog implements GameListener {
 
     // ---------------------------------------------------------------- before the game begins
 
-    /**
-     * "The red player has four (04) pieces named R1, R2, R3, and R4."
-     *
-     * <p>The behaviour line underneath is not required by Section 3, but it makes the transcript
-     * self-explanatory: a reader can see why red keeps hunting captures without reading any code.
-     */
+    /** "The red player has four (04) pieces named R1, R2, R3, and R4." */
     @Override
-    public void introducePlayer(PieceColour colour, List<Piece> pieces, String behaviourSummary) {
+    public void introducePlayer(PieceColour colour, List<Piece> pieces) {
         out.printf("The %s player has four (04) pieces named %s, %s, %s, and %s.%n",
                 colour.displayName(), pieces.get(0).name(), pieces.get(1).name(),
                 pieces.get(2).name(), pieces.get(3).name());
-        out.printf("  Behaviour: %s.%n", behaviourSummary);
-    }
-
-    @Override
-    public void announceBoardLayout() {
-        blankLine();
-        out.println(SEPARATOR);
-        out.println("Board layout");
-        out.println(SEPARATOR);
-        out.println("The standard path has 52 cells numbered 0 to 51, starting at the yellow");
-        out.println("starting square and running clockwise.");
-        for (PieceColour colour : PieceColour.values()) {
-            out.printf("  %-6s starting square X = %2d, approach cell = %2d, home straight = %shomepath0..%d%n",
-                    colour.displayName(), colour.startCell(), colour.approachCell(),
-                    colour.displayName(), BoardGeometry.HOME_STRAIGHT_LENGTH - 1);
-        }
-        out.printf("  Alpha = cell %d, Beta = cell %d, Gamma = cell %d%n",
-                BoardGeometry.ALPHA_CELL, BoardGeometry.BETA_CELL, BoardGeometry.GAMMA_CELL);
-        blankLine();
     }
 
     // ---------------------------------------------------------------- choosing the first player
@@ -77,11 +53,6 @@ public final class GameLog implements GameListener {
     @Override
     public void openingRoll(PieceColour colour, int value) {
         out.printf("%s rolls %d%n", colour.displayName(), value);
-    }
-
-    @Override
-    public void openingRollTie() {
-        out.println("The highest roll is shared, so the tied players roll again.");
     }
 
     /** "[colour] player has the highest roll and will begin the game." */
@@ -100,14 +71,6 @@ public final class GameLog implements GameListener {
 
     // ---------------------------------------------------------------- rounds and turns
 
-    @Override
-    public void roundHeader(int roundNumber) {
-        blankLine();
-        out.println(SEPARATOR);
-        out.printf("Round %d%n", roundNumber);
-        out.println(SEPARATOR);
-    }
-
     /** Each turn is separated from the previous one by a blank line. */
     @Override
     public void turnStarted(PieceColour colour) {
@@ -120,18 +83,6 @@ public final class GameLog implements GameListener {
         out.printf("%s player rolled %d.%n", colour.displayName(), value);
     }
 
-    @Override
-    public void rollCannotBeUsed(PieceColour colour) {
-        out.printf("%s has no piece that can use this roll. Ignoring the throw and moving on to "
-                + "the next player.%n", colour.displayName());
-    }
-
-    @Override
-    public void thirdSixIgnored(PieceColour colour) {
-        out.printf("%s rolled a six for the third consecutive time, so the roll is ignored and the "
-                + "dice passes to the next player.%n", colour.displayName());
-    }
-
     // ---------------------------------------------------------------- moving
 
     /** "[Color X] player moves piece X[Name] to the starting point." */
@@ -141,42 +92,16 @@ public final class GameLog implements GameListener {
                 piece.colour().displayName(), piece.name());
     }
 
-    /** Rule T-1: the coin toss that fixes the direction of a piece leaving the base. */
-    @Override
-    public void coinTossed(Piece piece, Coin.Face face) {
-        out.printf("The coin toss for %s piece %s is %s, so it will move in a %s direction.%n",
-                piece.colour().displayName(), piece.name(), face.displayName(),
-                face.awardedDirection().displayName());
-    }
-
     /**
      * "[Color X] moves piece X from location L1 to L2 by [value] units in
      * [clockwise/counter-clockwise] direction."
      */
     @Override
-    public void movesPiece(PlannedMove move) {
-        Piece piece = move.primaryPiece();
+    public void movesPiece(PieceMovement movement) {
+        Piece piece = movement.piece();
         out.printf("%s moves piece %s from location %s to %s by %d units in %s direction.%n",
-                piece.colour().displayName(), piece.name(), move.from().label(),
-                move.destination().label(), move.stepsTaken(), move.direction().displayName());
-    }
-
-    /** Rule T-4: the whole block travels together, so all of its pieces are named. */
-    @Override
-    public void movesBlock(PlannedMove move) {
-        Piece piece = move.primaryPiece();
-        out.printf("%s moves its block of %d pieces (%s) from location %s to %s by %d units "
-                        + "in %s direction.%n",
-                piece.colour().displayName(), move.groupSize(), names(move.movedPieces()),
-                move.from().label(), move.destination().label(), move.stepsTaken(),
-                move.direction().displayName());
-    }
-
-    @Override
-    public void pieceReachedHome(Piece piece, int piecesHome) {
-        out.printf("%s piece %s has reached Home. %s now has %d/%d pieces home.%n",
-                piece.colour().displayName(), piece.name(), piece.colour().displayName(),
-                piecesHome, BoardGeometry.PIECES_PER_PLAYER);
+                piece.colour().displayName(), piece.name(), movement.from().label(),
+                movement.to().label(), movement.stepsTaken(), movement.direction().displayName());
     }
 
     // ---------------------------------------------------------------- blocks
@@ -214,21 +139,6 @@ public final class GameLog implements GameListener {
                 colour.displayName(), partialMove.destination().label());
     }
 
-    /** Rule T-6: a third consecutive six forces the player to break its blockade. */
-    @Override
-    public void blockadeMustBeBroken(PieceColour colour, String blockSquareLabel, int pieceCount) {
-        out.printf("%s rolled a six three times in a row and holds a blockade of %d pieces on "
-                        + "square %s, which must now be broken (Rule T-6).%n",
-                colour.displayName(), pieceCount, blockSquareLabel);
-    }
-
-    /** Rule T-6: the forced break-up cannot be played because the way is blocked or too short. */
-    @Override
-    public void blockadePieceCannotBeMoved(Piece piece, int units) {
-        out.printf("%s piece %s cannot be moved %d units out of the blockade, so it stays where it "
-                + "is.%n", piece.colour().displayName(), piece.name(), units);
-    }
-
     // ---------------------------------------------------------------- captures
 
     /**
@@ -240,12 +150,6 @@ public final class GameLog implements GameListener {
         out.printf("%s piece %s lands on square %s, captures %s piece %s, and returns it to the "
                         + "base.%n", capturer.colour().displayName(), capturer.name(), squareLabel,
                 captured.colour().displayName(), captured.name());
-    }
-
-    @Override
-    public void captureEarnsAnotherRoll(PieceColour colour) {
-        out.printf("%s captured an opponent piece and receives another roll (Rule T-2).%n",
-                colour.displayName());
     }
 
     // ---------------------------------------------------------------- mystery cell
@@ -266,8 +170,6 @@ public final class GameLog implements GameListener {
         if (mysteryCell.isActive()) {
             out.printf("The mystery cell is at %d and will be at that location for the next %d "
                     + "values.%n", mysteryCell.cell(), mysteryCell.roundsRemaining());
-        } else {
-            out.println("There is no mystery cell on the board yet.");
         }
     }
 
@@ -275,7 +177,7 @@ public final class GameLog implements GameListener {
     @Override
     public void landsOnMysteryCell(Piece piece, TeleportDestination destination) {
         out.printf("%s player lands on a mystery cell and is teleported to %s.%n",
-                piece.colour().displayName(), destination.displayName());
+                piece.colour().displayName(), destination.squareFor(piece.colour()).label());
     }
 
     /** "[Color X] piece [name] teleported to Alpha." (and the five other destinations) */

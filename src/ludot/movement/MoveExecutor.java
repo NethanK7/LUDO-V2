@@ -71,7 +71,6 @@ public final class MoveExecutor {
             }
         }
 
-        reportPiecesThatReachedHome(movedPieces);
         return captured;
     }
 
@@ -84,7 +83,6 @@ public final class MoveExecutor {
 
         Coin.Face face = coin.toss();
         piece.assignStartingDirection(face.awardedDirection());
-        log.coinTossed(piece, face);
     }
 
     /** Rule 1, Rule T-4 and Rule T-5: the piece or block travels and its bookkeeping is updated. */
@@ -102,11 +100,7 @@ public final class MoveExecutor {
             board.relocate(piece, movement.to());
         }
 
-        if (move.isBlockMove()) {
-            log.movesBlock(move);
-        } else {
-            log.movesPiece(move);
-        }
+        move.movements().forEach(log::movesPiece);
     }
 
     /**
@@ -140,13 +134,5 @@ public final class MoveExecutor {
 
         log.playerPieceCounts(board, capturer.colour());
         return true;
-    }
-
-    private void reportPiecesThatReachedHome(List<Piece> movedPieces) {
-        for (Piece piece : movedPieces) {
-            if (piece.isAtHome()) {
-                log.pieceReachedHome(piece, board.piecesAtHome(piece.colour()).size());
-            }
-        }
     }
 }

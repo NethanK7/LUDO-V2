@@ -28,10 +28,6 @@ public final class RedPlayer extends Player {
         super(PieceColour.RED, board, pathResolver);
     }
 
-    @Override
-    public String behaviourSummary() {
-        return "aggressive - hunts captures, prefers the opponent piece closest to its home";
-    }
 
     @Override
     protected Optional<PlannedMove> selectMove(List<PlannedMove> options, int rollValue) {

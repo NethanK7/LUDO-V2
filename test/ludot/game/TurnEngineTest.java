@@ -7,7 +7,6 @@ import static ludot.Fixtures.placeOn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -66,7 +65,7 @@ class TurnEngineTest {
         engine.playTurn(yellow);
 
         verify(dice, times(1)).roll();
-        verify(listener).rollCannotBeUsed(PieceColour.YELLOW);
+        assertTrue(piece(board, PieceColour.YELLOW, 1).isInBase());
     }
 
     @Test
@@ -88,7 +87,6 @@ class TurnEngineTest {
         engine.playTurn(blue);
 
         verify(dice, times(3)).roll();
-        verify(listener).thirdSixIgnored(PieceColour.BLUE);
         assertEquals(Square.ring(19), piece(board, PieceColour.BLUE, 1).square());
     }
 
@@ -103,7 +101,6 @@ class TurnEngineTest {
 
         engine.playTurn(yellow);
 
-        verify(listener).blockadeMustBeBroken(PieceColour.YELLOW, "10", 3);
         assertEquals(Square.ring(10), piece(board, PieceColour.YELLOW, 1).square());
         assertEquals(Square.ring(14), piece(board, PieceColour.YELLOW, 2).square());
         assertEquals(Square.ring(12), piece(board, PieceColour.YELLOW, 3).square());
@@ -121,7 +118,6 @@ class TurnEngineTest {
 
         engine.playTurn(new GreenPlayer(board, pathResolver));
 
-        verify(listener).blockadeMustBeBroken(PieceColour.GREEN, "51", 2);
         assertEquals(Square.ring(51), piece(board, PieceColour.GREEN, 1).square());
         assertEquals(Square.ring(5), piece(board, PieceColour.GREEN, 2).square());
         assertTrue(board.blockSquaresOf(PieceColour.GREEN).isEmpty());
@@ -136,7 +132,6 @@ class TurnEngineTest {
 
         engine.playTurn(yellow);
 
-        verify(listener).captureEarnsAnotherRoll(PieceColour.YELLOW);
         verify(dice, times(2)).roll();
         assertEquals(Square.ring(15), piece(board, PieceColour.YELLOW, 1).square());
     }
@@ -215,7 +210,5 @@ class TurnEngineTest {
 
         assertTrue(board.hasAllPiecesHome(PieceColour.YELLOW));
         verify(dice, times(1)).roll();
-        verify(listener, never()).rollCannotBeUsed(any());
-        verify(listener, never()).blockadePieceCannotBeMoved(any(), anyInt());
     }
 }

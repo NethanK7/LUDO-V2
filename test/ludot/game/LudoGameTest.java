@@ -59,7 +59,7 @@ class LudoGameTest {
 
         game.play();
 
-        verify(listener, times(4)).introducePlayer(any(), any(), any());
+        verify(listener, times(4)).introducePlayer(any(), any());
         verify(listener).firstPlayerChosen(any());
         verify(listener).announceWinner(game.finishingOrder().get(0));
         @SuppressWarnings("unchecked")
@@ -88,6 +88,8 @@ class LudoGameTest {
 
         verify(listener).gameGridlocked(anyInt(), eq(GameRules.GRIDLOCK_ROUNDS), any());
         verify(listener, never()).gameStoppedAtRoundLimit(anyInt(), any());
+        // nobody got a piece home in this game, so there are no places to announce
+        verify(listener, never()).announceFinalStandings(any());
     }
 
     @Test

@@ -31,10 +31,6 @@ public final class GreenPlayer extends Player {
         super(PieceColour.GREEN, board, pathResolver);
     }
 
-    @Override
-    public String behaviourSummary() {
-        return "blocker - builds and keeps blocks, breaks one only as a last resort";
-    }
 
     @Override
     protected Optional<PlannedMove> selectMove(List<PlannedMove> options, int rollValue) {

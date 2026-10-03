@@ -43,8 +43,6 @@ public abstract class Player {
         return colour;
     }
 
-    /** A one-line description of this behaviour, printed when the game introduces the players. */
-    public abstract String behaviourSummary();
 
     /**
      * Picks the move to play, or empty when the roll cannot be used at all.

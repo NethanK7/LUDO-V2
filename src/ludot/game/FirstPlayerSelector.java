@@ -34,7 +34,6 @@ public final class FirstPlayerSelector {
             if (highestRollers.size() == 1) {
                 return highestRollers.get(0);
             }
-            log.openingRollTie();
             contenders = highestRollers;
         }
         return contenders.get(0);

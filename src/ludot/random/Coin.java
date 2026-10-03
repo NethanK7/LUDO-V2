@@ -13,19 +13,13 @@ public final class Coin {
 
     /** The two faces of the coin, each mapped to the direction it awards. */
     public enum Face {
-        HEADS("heads", Direction.CLOCKWISE),
-        TAILS("tails", Direction.COUNTER_CLOCKWISE);
+        HEADS(Direction.CLOCKWISE),
+        TAILS(Direction.COUNTER_CLOCKWISE);
 
-        private final String displayName;
         private final Direction awardedDirection;
 
-        Face(String displayName, Direction awardedDirection) {
-            this.displayName = displayName;
+        Face(Direction awardedDirection) {
             this.awardedDirection = awardedDirection;
-        }
-
-        public String displayName() {
-            return displayName;
         }
 
         public Direction awardedDirection() {

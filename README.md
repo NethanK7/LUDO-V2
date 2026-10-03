@@ -64,7 +64,7 @@ src/
     ui/          GameListener, GameLog
 test/
   MainTest.java
-  ludot/         one test class per production class (224 JUnit 5 tests), plus Fixtures
+  ludot/         22 test classes mirroring the packages above (265 JUnit 5 tests), plus Fixtures
 ```
 
 ## The board numbering
@@ -87,19 +87,23 @@ the next player to roll would be G"*.
 
 ## Testing
 
-Every production class has its own test class in the same package under `test/`. Each test sets up
+Every area of the code has a test class in the same package under `test/`. Each test sets up
 an exact board position by hand, so the expected cells were worked out on the numbered board rather
 than copied from the code. Randomness never leaks into a unit test: the dice, the coin and the
 mystery cell all take their chance from `RandomSource` or `Dice`, which the tests replace with
 Mockito mocks (`Fixtures.fixedRandom`, `when(dice.roll()).thenReturn(6, 6, 6)`), and the printed
 output is checked by verifying `GameListener` events or by capturing `GameLog` word for word.
 
-`mvn verify` reports about 98% line and 95% branch coverage.
+`OutputMatchesBriefTest` plays 40 whole games and checks that every printed line is one of the
+messages listed in Section 3.1 of the brief, so nothing unrequested can slip into the output.
+
+`mvn verify` reports about 97% line and 95% branch coverage.
 
 ## Documentation
 
 | File | What it is for |
 |---|---|
 | `README.md` | this file — how to build and run, and where to look first |
+| `EXPLAIN.md` | a two-page plain-English cheat sheet for explaining and defending the project |
 | `REPORT.md` | the design report: structures, justification, SOLID and patterns, efficiency, the rule-to-class map, and the documented interpretations |
 | `WALKTHROUGH.md` | a line-by-line explanation of every class and method, plus worked traces from real games — the one to read before explaining or defending the code |

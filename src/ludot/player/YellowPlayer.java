@@ -22,10 +22,6 @@ public final class YellowPlayer extends Player {
         super(PieceColour.YELLOW, board, pathResolver);
     }
 
-    @Override
-    public String behaviourSummary() {
-        return "racer - empties its base, captures only to satisfy Rule T-7, then runs for home";
-    }
 
     @Override
     protected Optional<PlannedMove> selectMove(List<PlannedMove> options, int rollValue) {

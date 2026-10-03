@@ -6,10 +6,10 @@ import ludot.board.Piece;
 import ludot.board.PieceColour;
 import ludot.effects.SpeedModifier;
 import ludot.movement.BlockedAttempt;
+import ludot.movement.PieceMovement;
 import ludot.movement.PlannedMove;
 import ludot.mystery.MysteryCell;
 import ludot.mystery.TeleportDestination;
-import ludot.random.Coin;
 
 /**
  * Everything that can happen during a game that somebody might want to hear about.
@@ -24,13 +24,9 @@ public interface GameListener {
 
     // ---------------------------------------------------------------- before the game begins
 
-    void introducePlayer(PieceColour colour, List<Piece> pieces, String behaviourSummary);
-
-    void announceBoardLayout();
+    void introducePlayer(PieceColour colour, List<Piece> pieces);
 
     void openingRoll(PieceColour colour, int value);
-
-    void openingRollTie();
 
     void firstPlayerChosen(PieceColour colour);
 
@@ -38,27 +34,15 @@ public interface GameListener {
 
     // ---------------------------------------------------------------- rounds and turns
 
-    void roundHeader(int roundNumber);
-
     void turnStarted(PieceColour colour);
 
     void diceRolled(PieceColour colour, int value);
-
-    void rollCannotBeUsed(PieceColour colour);
-
-    void thirdSixIgnored(PieceColour colour);
 
     // ---------------------------------------------------------------- moving
 
     void movesToStartingPoint(Piece piece);
 
-    void coinTossed(Piece piece, Coin.Face face);
-
-    void movesPiece(PlannedMove move);
-
-    void movesBlock(PlannedMove move);
-
-    void pieceReachedHome(Piece piece, int piecesHome);
+    void movesPiece(PieceMovement movement);
 
     // ---------------------------------------------------------------- blocks
 
@@ -68,15 +52,9 @@ public interface GameListener {
 
     void blockedButMovedUpToTheBlock(PieceColour colour, PlannedMove partialMove);
 
-    void blockadeMustBeBroken(PieceColour colour, String blockSquareLabel, int pieceCount);
-
-    void blockadePieceCannotBeMoved(Piece piece, int units);
-
     // ---------------------------------------------------------------- captures
 
     void capture(Piece capturer, Piece captured, String squareLabel);
-
-    void captureEarnsAnotherRoll(PieceColour colour);
 
     // ---------------------------------------------------------------- mystery cell
 

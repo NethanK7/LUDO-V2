@@ -33,10 +33,9 @@ class GameLogTest {
 
     @Test
     void beforeTheGameBegins() {
-        log.introducePlayer(PieceColour.RED, board.piecesOf(PieceColour.RED), "aggressive");
+        log.introducePlayer(PieceColour.RED, board.piecesOf(PieceColour.RED));
 
-        assertEquals("The red player has four (04) pieces named R1, R2, R3, and R4.\n"
-                + "  Behaviour: aggressive.\n", printed());
+        assertEquals("The red player has four (04) pieces named R1, R2, R3, and R4.\n", printed());
     }
 
     @Test
@@ -68,10 +67,10 @@ class GameLogTest {
     @Test
     void movingAPiece() {
         Piece piece = place(board, PieceColour.RED, 1, 26, Direction.CLOCKWISE, 0);
-        PlannedMove move = new PlannedMove(MoveKind.ADVANCE, List.of(new PieceMovement(piece,
-                Square.ring(26), Square.ring(30), Direction.COUNTER_CLOCKWISE, 4, 0)), List.of());
+        PieceMovement movement = new PieceMovement(piece, Square.ring(26), Square.ring(30),
+                Direction.COUNTER_CLOCKWISE, 4, 0);
 
-        log.movesPiece(move);
+        log.movesPiece(movement);
 
         assertEquals("red moves piece R1 from location 26 to 30 by 4 units in counter-clockwise "
                 + "direction.\n", printed());
@@ -141,7 +140,7 @@ class GameLogTest {
 
         assertEquals("A mystery cell has spawned in location 9 and will be at this location for "
                 + "the next four rounds.\n"
-                + "yellow player lands on a mystery cell and is teleported to Alpha.\n"
+                + "yellow player lands on a mystery cell and is teleported to 7.\n"
                 + "yellow piece Y2 teleported to Alpha.\n"
                 + "yellow piece Y2 feels energized, and movement speed doubles.\n"
                 + "yellow piece Y2 feels sick, and movement speed halves.\n"

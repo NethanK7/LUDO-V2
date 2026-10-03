@@ -40,7 +40,6 @@ class FirstPlayerSelectorTest {
         when(dice.roll()).thenReturn(6, 1, 6, 2, 3, 5);
 
         assertEquals(PieceColour.RED, selector.determineFirstPlayer());
-        verify(listener).openingRollTie();
         verify(dice, times(6)).roll();
         verify(listener).openingRoll(PieceColour.RED, 5);
     }

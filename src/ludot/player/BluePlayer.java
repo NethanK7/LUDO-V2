@@ -47,10 +47,6 @@ public final class BluePlayer extends Player {
         this.mysteryCell = mysteryCell;
     }
 
-    @Override
-    public String behaviourSummary() {
-        return "cyclic - moves B1, B2, B3, B4 in turn, chasing or dodging the mystery cell";
-    }
 
     @Override
     protected Optional<PlannedMove> selectMove(List<PlannedMove> options, int rollValue) {

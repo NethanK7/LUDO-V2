@@ -53,7 +53,6 @@ public final class LudoGame {
         List<Square> previousPosition = boardPosition();
         int roundsWithoutMovement = 0;
         for (int round = 1; round <= GameRules.MAX_ROUNDS; round++) {
-            log.roundHeader(round);
             playRound(turnOrder);
             reportEndOfRound();
 
@@ -67,13 +66,20 @@ public final class LudoGame {
             previousPosition = position;
             if (roundsWithoutMovement >= GameRules.GRIDLOCK_ROUNDS) {
                 log.gameGridlocked(round, GameRules.GRIDLOCK_ROUNDS, board);
-                log.announceFinalStandings(finishingOrder);
+                announceStandingsDecidedSoFar();
                 return;
             }
         }
 
         log.gameStoppedAtRoundLimit(GameRules.MAX_ROUNDS, board);
-        log.announceFinalStandings(finishingOrder);
+        announceStandingsDecidedSoFar();
+    }
+
+    /** When a game is cut short, only the players that really finished are given a place. */
+    private void announceStandingsDecidedSoFar() {
+        if (!finishingOrder.isEmpty()) {
+            log.announceFinalStandings(finishingOrder);
+        }
     }
 
     /**
@@ -104,9 +110,8 @@ public final class LudoGame {
     private void introducePlayers() {
         for (PieceColour colour : PieceColour.values()) {
             Player player = players.get(colour);
-            log.introducePlayer(colour, board.piecesOf(colour), player.behaviourSummary());
+            log.introducePlayer(colour, board.piecesOf(colour));
         }
-        log.announceBoardLayout();
     }
 
     /** Section 3: "Once the First Player is Chosen" - the roll-off and the resulting order. */

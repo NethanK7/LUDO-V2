@@ -66,10 +66,7 @@ public final class TurnEngine {
             }
 
             boolean captured = playSingleRoll(player, value);
-            if (captured) {
-                // Rule T-2: "allowing the capturing player another roll as a bonus for capturing".
-                log.captureEarnsAnotherRoll(player.colour());
-            }
+            // Rule T-2: "allowing the capturing player another roll as a bonus for capturing"
             boolean earnedAnotherRoll = value == Dice.SIX || captured;
             if (!earnedAnotherRoll || board.hasAllPiecesHome(player.colour())) {
                 // A player whose last piece has just reached home has nothing left to roll for.
@@ -98,7 +95,6 @@ public final class TurnEngine {
      */
     private boolean handleRollThatCannotBePlayed(Player player, MoveOptions options) {
         if (!options.hasBlockedAttempt()) {
-            log.rollCannotBeUsed(player.colour());
             return false;
         }
 
@@ -147,7 +143,6 @@ public final class TurnEngine {
     private void handleThirdConsecutiveSix(Player player) {
         List<Square> blockades = board.blockSquaresOf(player.colour());
         if (blockades.isEmpty()) {
-            log.thirdSixIgnored(player.colour());
             return;
         }
 
@@ -157,7 +152,6 @@ public final class TurnEngine {
                 // An earlier break-up in this same turn has already dissolved this blockade.
                 continue;
             }
-            log.blockadeMustBeBroken(player.colour(), blockade.label(), pieces.size());
             breakUpBlockade(player, pieces);
         }
     }
@@ -175,11 +169,7 @@ public final class TurnEngine {
             int units = shares.get(index);
             Optional<PlannedMove> move =
                     moveGenerator.forcedMove(piece, piece.initialDirection(), units);
-            if (move.isEmpty()) {
-                log.blockadePieceCannotBeMoved(piece, units);
-                continue;
-            }
-            applyMove(player, move.get());
+            move.ifPresent(forcedMove -> applyMove(player, forcedMove));
         }
     }
 

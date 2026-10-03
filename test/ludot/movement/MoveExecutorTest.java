@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,7 +52,6 @@ class MoveExecutorTest {
         assertEquals(Direction.COUNTER_CLOCKWISE, piece.direction());
         assertEquals(Direction.COUNTER_CLOCKWISE, piece.initialDirection());
         verify(listener).movesToStartingPoint(piece);
-        verify(listener).coinTossed(piece, Coin.Face.TAILS);
         verify(listener).playerPieceCounts(board, PieceColour.RED);
     }
 
@@ -82,7 +82,7 @@ class MoveExecutorTest {
         PlannedMove move = generator.optionsFor(PieceColour.RED, 3).playableMoves().get(0);
 
         assertFalse(executorTossing(true).execute(move));
-        verify(listener).movesPiece(move);
+        verify(listener).movesPiece(move.movements().get(0));
         verify(listener, never()).capture(any(), any(), any());
     }
 
@@ -101,7 +101,7 @@ class MoveExecutorTest {
         assertEquals(1, first.captureCount());
         assertEquals(1, second.captureCount());
         assertEquals(4, board.piecesInBase(PieceColour.BLUE).size());
-        verify(listener).movesBlock(blockMove);
+        verify(listener, times(2)).movesPiece(any());
     }
 
     @Test
@@ -117,7 +117,7 @@ class MoveExecutorTest {
     }
 
     @Test
-    void reachingHomeIsReported() {
+    void aPieceReachesHomeOnTheExactRoll() {
         // Rule 10
         Piece piece = placeOn(board, PieceColour.RED, 1, Square.homeStraight(PieceColour.RED, 4),
                 Direction.CLOCKWISE, 1);
@@ -126,6 +126,5 @@ class MoveExecutorTest {
         executorTossing(true).execute(move);
 
         assertTrue(piece.isAtHome());
-        verify(listener).pieceReachedHome(piece, 1);
     }
 }
