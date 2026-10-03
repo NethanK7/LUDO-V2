@@ -10,7 +10,6 @@ import ludot.board.Board;
 import ludot.board.Direction;
 import ludot.board.PieceColour;
 import ludot.board.Square;
-import ludot.movement.PathResolver;
 import ludot.movement.PlannedMove;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class RedPlayerTest {
 
     private final Board board = new Board();
-    private final RedPlayer red = new RedPlayer(board, new PathResolver(board));
+    private final Player red = PlayerTestSupport.playerFor(board, PieceColour.RED);
 
     @Test
     void aCaptureComesBeforeBringingAPieceOutOnASix() {

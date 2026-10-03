@@ -211,4 +211,31 @@ class MoveGeneratorTest {
         assertEquals(1, blockMoves.size(), "block moves");
         return blockMoves.get(0);
     }
+
+    @Test
+    void aPieceMayLandOnItsOwnPieceAndFormABlock() {
+        // Rule 7 is replaced by T-3: landing on an own piece is allowed
+        place(board, PieceColour.RED, 1, 10, Direction.CLOCKWISE, 0);
+        place(board, PieceColour.RED, 2, 13, Direction.CLOCKWISE, 0);
+
+        PlannedMove onToR2 = generator.optionsFor(PieceColour.RED, 3).playableMoves().stream()
+                .filter(move -> move.primaryPiece().name().equals("R1"))
+                .findFirst().orElseThrow();
+
+        assertEquals(Square.ring(13), onToR2.destination());
+        assertTrue(onToR2.capturedPieces().isEmpty());
+    }
+
+    @Test
+    void aBlockOfThreeMovesTheRollDividedByThree() {
+        // T-4: 6 / 3 = 2 cells
+        for (int number = 1; number <= 3; number++) {
+            place(board, PieceColour.GREEN, number, 30, Direction.CLOCKWISE, 0);
+        }
+
+        PlannedMove blockMove = onlyBlockMove(generator.optionsFor(PieceColour.GREEN, 6));
+
+        assertEquals(Square.ring(32), blockMove.destination());
+        assertEquals(3, blockMove.groupSize());
+    }
 }

@@ -11,7 +11,6 @@ import ludot.board.Board;
 import ludot.board.Direction;
 import ludot.board.PieceColour;
 import ludot.board.Square;
-import ludot.movement.PathResolver;
 import ludot.movement.PlannedMove;
 import ludot.mystery.MysteryCell;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,8 @@ class BluePlayerTest {
 
     private final Board board = new Board();
     private final MysteryCell mysteryCell = mock(MysteryCell.class);
-    private final BluePlayer blue = new BluePlayer(board, new PathResolver(board), mysteryCell);
+    private final CyclicMysteryStrategy cycle = new CyclicMysteryStrategy(mysteryCell);
+    private final Player blue = new Player(PieceColour.BLUE, cycle);
 
     @Test
     void theCycleStartsWithB1() {
@@ -50,7 +50,7 @@ class BluePlayerTest {
 
         blue.onRoundCompleted();
 
-        assertEquals(2, blue.scheduledPieceNumber());
+        assertEquals(2, cycle.scheduledPieceNumber());
         assertEquals("B2", choiceOf(blue, board, 2).primaryPiece().name());
     }
 
@@ -64,14 +64,14 @@ class BluePlayerTest {
         blue.onRoundCompleted();
 
         assertEquals("B2", choice.primaryPiece().name());
-        assertEquals(3, blue.scheduledPieceNumber());
+        assertEquals(3, cycle.scheduledPieceNumber());
     }
 
     @Test
     void theCycleStaysPutInARoundWhereBlueMovedNothing() {
         blue.onRoundCompleted();
 
-        assertEquals(1, blue.scheduledPieceNumber());
+        assertEquals(1, cycle.scheduledPieceNumber());
     }
 
     @Test

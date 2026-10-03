@@ -1,6 +1,7 @@
 package ludot.game;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.OptionalInt;
 import ludot.board.Board;
 import ludot.board.Piece;
 import ludot.board.PieceColour;
+import ludot.board.PlayerStatus;
 import ludot.board.Square;
 import ludot.mystery.MysteryCell;
 import ludot.player.Player;
@@ -46,7 +48,7 @@ public final class LudoGame {
     }
 
     /** Runs the whole simulation from the opening rolls to the final standings. */
-    public void play() {
+    public GameResult play() {
         introducePlayers();
         List<PieceColour> turnOrder = decideTurnOrder();
 
@@ -57,22 +59,29 @@ public final class LudoGame {
             reportEndOfRound();
 
             if (finishingOrder.size() >= GameRules.PLACES_TO_DECIDE) {
-                log.announceFinalStandings(placings(turnOrder));
-                return;
+                List<PieceColour> placings = placings(turnOrder);
+                log.announceFinalStandings(placings);
+                return new GameResult(placings, GameResult.Ending.ALL_PLACES_DECIDED, round);
             }
 
             List<Square> position = boardPosition();
             roundsWithoutMovement = position.equals(previousPosition) ? roundsWithoutMovement + 1 : 0;
             previousPosition = position;
             if (roundsWithoutMovement >= GameRules.GRIDLOCK_ROUNDS) {
-                log.gameGridlocked(round, GameRules.GRIDLOCK_ROUNDS, board);
+                log.gameGridlocked(round, GameRules.GRIDLOCK_ROUNDS, statuses());
                 announceStandingsDecidedSoFar();
-                return;
+                return new GameResult(finishingOrder, GameResult.Ending.GRIDLOCK, round);
             }
         }
 
-        log.gameStoppedAtRoundLimit(GameRules.MAX_ROUNDS, board);
+        log.gameStoppedAtRoundLimit(GameRules.MAX_ROUNDS, statuses());
         announceStandingsDecidedSoFar();
+        return new GameResult(finishingOrder, GameResult.Ending.ROUND_LIMIT, GameRules.MAX_ROUNDS);
+    }
+
+    /** A snapshot of every player, for the reports that need all four. */
+    private List<PlayerStatus> statuses() {
+        return Arrays.stream(PieceColour.values()).map(board::statusOf).toList();
     }
 
     /** When a game is cut short, only the players that really finished are given a place. */
@@ -101,15 +110,9 @@ public final class LudoGame {
         return board.allPieces().stream().map(Piece::square).toList();
     }
 
-    /** Colours in the order they brought all four pieces home; exposed for the tests. */
-    List<PieceColour> finishingOrder() {
-        return List.copyOf(finishingOrder);
-    }
-
     /** Section 3: "Before Game Begins" - one introduction line per player. */
     private void introducePlayers() {
         for (PieceColour colour : PieceColour.values()) {
-            Player player = players.get(colour);
             log.introducePlayer(colour, board.piecesOf(colour));
         }
     }
@@ -157,9 +160,9 @@ public final class LudoGame {
      */
     private void reportEndOfRound() {
         log.roundEnded();
-        for (PieceColour colour : PieceColour.values()) {
-            log.playerPieceCounts(board, colour);
-            log.pieceLocations(board, colour);
+        for (PlayerStatus status : statuses()) {
+            log.playerPieceCounts(status);
+            log.pieceLocations(status);
         }
 
         OptionalInt spawnedCell = mysteryCell.onRoundCompleted();

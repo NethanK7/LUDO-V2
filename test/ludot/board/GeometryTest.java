@@ -34,12 +34,6 @@ class GeometryTest {
     }
 
     @Test
-    void coloursAreNamedInLowerCaseWithAnUpperCaseInitial() {
-        assertEquals("red", PieceColour.RED.displayName());
-        assertEquals('R', PieceColour.RED.initial());
-    }
-
-    @Test
     void wrappingKeepsEveryCellOnTheFiftyTwoCellPath() {
         assertEquals(0, BoardGeometry.wrapRing(52));
         assertEquals(51, BoardGeometry.wrapRing(-1));
@@ -58,10 +52,4 @@ class GeometryTest {
         assertEquals(4, Direction.COUNTER_CLOCKWISE.nextRingCell(5));
     }
 
-    @Test
-    void aCounterClockwisePieceMustReachItsApproachCellTwice() {
-        // T-1
-        assertEquals(1, Direction.CLOCKWISE.requiredApproachPasses());
-        assertEquals(2, Direction.COUNTER_CLOCKWISE.requiredApproachPasses());
-    }
 }

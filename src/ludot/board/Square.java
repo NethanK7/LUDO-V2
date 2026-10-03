@@ -1,7 +1,5 @@
 package ludot.board;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -35,34 +33,6 @@ public final class Square {
     /** 0..51 on the ring, 0..4 in a home straight, and 0 for BASE / HOME. */
     private final int index;
 
-    /*
-     * A LUDO-T board contains exactly 80 distinct squares: the 52 shared standard cells, plus a base,
-     * a five-cell home straight and a home for each of the four colours (52 + 4 x 7). Since a Square is immutable,
-     * every one of them can be created once, up front, and shared by everybody who refers to it -
-     * the Flyweight pattern. Walking a path then costs no object allocation at all, and identical
-     * squares are also identical objects, which makes comparing them as cheap as it can be.
-     */
-    private static final Square[] RING_SQUARES = new Square[BoardGeometry.RING_SIZE];
-    private static final Map<PieceColour, Square[]> HOME_STRAIGHT_SQUARES =
-            new EnumMap<>(PieceColour.class);
-    private static final Map<PieceColour, Square> BASE_SQUARES = new EnumMap<>(PieceColour.class);
-    private static final Map<PieceColour, Square> HOME_SQUARES = new EnumMap<>(PieceColour.class);
-
-    static {
-        for (int cell = 0; cell < BoardGeometry.RING_SIZE; cell++) {
-            RING_SQUARES[cell] = new Square(Kind.RING, null, cell);
-        }
-        for (PieceColour colour : PieceColour.values()) {
-            Square[] homeStraight = new Square[BoardGeometry.HOME_STRAIGHT_LENGTH];
-            for (int cell = 0; cell < BoardGeometry.HOME_STRAIGHT_LENGTH; cell++) {
-                homeStraight[cell] = new Square(Kind.HOME_STRAIGHT, colour, cell);
-            }
-            HOME_STRAIGHT_SQUARES.put(colour, homeStraight);
-            BASE_SQUARES.put(colour, new Square(Kind.BASE, colour, 0));
-            HOME_SQUARES.put(colour, new Square(Kind.HOME, colour, 0));
-        }
-    }
-
     private Square(Kind kind, PieceColour owner, int index) {
         this.kind = kind;
         this.owner = owner;
@@ -74,7 +44,7 @@ public final class Square {
         if (cell < 0 || cell >= BoardGeometry.RING_SIZE) {
             throw new IllegalArgumentException("Standard-path cell out of range: " + cell);
         }
-        return RING_SQUARES[cell];
+        return new Square(Kind.RING, null, cell);
     }
 
     /** One of a colour's five home-straight cells, {@code [colour]homepath0} .. {@code 4}. */
@@ -82,15 +52,15 @@ public final class Square {
         if (cell < 0 || cell >= BoardGeometry.HOME_STRAIGHT_LENGTH) {
             throw new IllegalArgumentException("Home-straight cell out of range: " + cell);
         }
-        return HOME_STRAIGHT_SQUARES.get(owner)[cell];
+        return new Square(Kind.HOME_STRAIGHT, owner, cell);
     }
 
     public static Square base(PieceColour owner) {
-        return BASE_SQUARES.get(owner);
+        return new Square(Kind.BASE, owner, 0);
     }
 
     public static Square home(PieceColour owner) {
-        return HOME_SQUARES.get(owner);
+        return new Square(Kind.HOME, owner, 0);
     }
 
     /** Cell index inside this square's kind: 0..51 on the ring, 0..4 in a home straight. */
@@ -155,8 +125,4 @@ public final class Square {
         return Objects.hash(kind, owner, index);
     }
 
-    @Override
-    public String toString() {
-        return label();
-    }
 }

@@ -31,10 +31,6 @@ public record PlannedMove(MoveKind kind, List<PieceMovement> movements, List<Pie
         return movements.get(0).piece();
     }
 
-    public Square from() {
-        return movements.get(0).from();
-    }
-
     public Square destination() {
         return movements.get(0).to();
     }
@@ -70,9 +66,4 @@ public record PlannedMove(MoveKind kind, List<PieceMovement> movements, List<Pie
         return movements.stream().map(PieceMovement::piece).toList();
     }
 
-    @Override
-    public String toString() {
-        return kind + " " + primaryPiece().name() + " " + from().label() + "->"
-                + destination().label();
-    }
 }

@@ -1,6 +1,8 @@
 package ludot.game;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -48,5 +50,15 @@ class FirstPlayerSelectorTest {
     void theDicePassesToTheLeftFromTheFirstPlayer() {
         assertEquals(List.of(PieceColour.RED, PieceColour.GREEN, PieceColour.YELLOW,
                 PieceColour.BLUE), selector.roundOrderStartingWith(PieceColour.RED));
+    }
+
+    @Test
+    void aThreeWayTieIsRolledOffBetweenThoseThreeOnly() {
+        // yellow, blue and red tie on 5; green (2) is out; blue wins the roll-off
+        when(dice.roll()).thenReturn(5, 5, 5, 2, 1, 4, 3);
+
+        assertEquals(PieceColour.BLUE, selector.determineFirstPlayer());
+        verify(dice, times(7)).roll();
+        verify(listener, times(1)).openingRoll(eq(PieceColour.GREEN), anyInt());
     }
 }

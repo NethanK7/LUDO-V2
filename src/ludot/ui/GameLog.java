@@ -2,10 +2,10 @@ package ludot.ui;
 
 import java.io.PrintStream;
 import java.util.List;
-import ludot.board.Board;
 import ludot.board.BoardGeometry;
 import ludot.board.Piece;
 import ludot.board.PieceColour;
+import ludot.board.PlayerStatus;
 import ludot.effects.SpeedModifier;
 import ludot.movement.BlockedAttempt;
 import ludot.movement.PieceMovement;
@@ -244,21 +244,21 @@ public final class GameLog implements GameListener {
      * base."
      */
     @Override
-    public void playerPieceCounts(Board board, PieceColour colour) {
+    public void playerPieceCounts(PlayerStatus status) {
         out.printf("%s player now has %d/%d on pieces on the board and %d/%d pieces on the base.%n",
-                colour.displayName(), board.piecesInPlay(colour).size(),
-                BoardGeometry.PIECES_PER_PLAYER, board.piecesInBase(colour).size(),
+                status.colour().displayName(), status.piecesOnBoard(),
+                BoardGeometry.PIECES_PER_PLAYER, status.piecesInBase(),
                 BoardGeometry.PIECES_PER_PLAYER);
     }
 
     /** The end-of-round listing of one player's pieces. */
     @Override
-    public void pieceLocations(Board board, PieceColour colour) {
+    public void pieceLocations(PlayerStatus status) {
         out.println(SEPARATOR);
-        out.printf("Location of pieces %s%n", colour.displayName());
+        out.printf("Location of pieces %s%n", status.colour().displayName());
         out.println(SEPARATOR);
-        for (Piece piece : board.piecesOf(colour)) {
-            out.printf("Piece %s -> %s.%n", piece.name(), piece.square().label());
+        for (PlayerStatus.PieceLocation piece : status.pieces()) {
+            out.printf("Piece %s -> %s.%n", piece.pieceName(), piece.location());
         }
     }
 
@@ -294,27 +294,27 @@ public final class GameLog implements GameListener {
 
     /** The safety net was hit; the players still on the board are listed with their progress. */
     @Override
-    public void gameStoppedAtRoundLimit(int roundLimit, Board board) {
+    public void gameStoppedAtRoundLimit(int roundLimit, List<PlayerStatus> statuses) {
         blankLine();
         out.printf("The simulation reached its safety limit of %d rounds and was stopped.%n",
                 roundLimit);
-        listUnfinishedPlayers(board);
+        listUnfinishedPlayers(statuses);
     }
 
     /** The board is gridlocked by blocks, so no further move is possible. */
     @Override
-    public void gameGridlocked(int round, int stillRounds, Board board) {
+    public void gameGridlocked(int round, int stillRounds, List<PlayerStatus> statuses) {
         blankLine();
         out.printf("No piece has moved for %d rounds: the blocks on the board leave no legal move, "
                 + "so the game ends after round %d.%n", stillRounds, round);
-        listUnfinishedPlayers(board);
+        listUnfinishedPlayers(statuses);
     }
 
-    private void listUnfinishedPlayers(Board board) {
-        for (PieceColour colour : PieceColour.values()) {
-            if (!board.hasAllPiecesHome(colour)) {
-                out.printf("Unfinished: %s with %d/%d pieces home%n", colour.displayName(),
-                        board.piecesAtHome(colour).size(), BoardGeometry.PIECES_PER_PLAYER);
+    private void listUnfinishedPlayers(List<PlayerStatus> statuses) {
+        for (PlayerStatus status : statuses) {
+            if (!status.hasFinished()) {
+                out.printf("Unfinished: %s with %d/%d pieces home%n", status.colour().displayName(),
+                        status.piecesHome(), BoardGeometry.PIECES_PER_PLAYER);
             }
         }
     }
@@ -323,7 +323,4 @@ public final class GameLog implements GameListener {
         out.println();
     }
 
-    private String names(List<Piece> pieces) {
-        return String.join(", ", pieces.stream().map(Piece::name).toList());
-    }
 }

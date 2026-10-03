@@ -56,4 +56,14 @@ class MainTest {
         assertTrue(out.toString().contains("player wins!!!"));
         assertTrue(out.toString().contains("4th place: "));
     }
+
+    @Test
+    void runningWithoutASeedStillPlaysACompleteGame() {
+        Main.main(new String[0]);
+
+        String printed = out.toString();
+        assertTrue(printed.contains("The order of a single round is"));
+        assertTrue(printed.contains("player wins!!!") || printed.contains("No piece has moved"));
+        assertEquals("", err.toString());
+    }
 }

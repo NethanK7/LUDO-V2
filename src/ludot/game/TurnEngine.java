@@ -3,16 +3,14 @@ package ludot.game;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import ludot.board.Board;
 import ludot.board.Piece;
 import ludot.board.Square;
-import ludot.movement.BlockedAttempt;
-import ludot.movement.MoveExecutor;
+import ludot.command.CommandFactory;
+import ludot.command.GameCommand;
 import ludot.movement.MoveGenerator;
 import ludot.movement.MoveOptions;
 import ludot.movement.PathResolver;
-import ludot.movement.PlannedMove;
 import ludot.player.Player;
 import ludot.random.Dice;
 import ludot.ui.GameListener;
@@ -31,16 +29,16 @@ public final class TurnEngine {
     private final Board board;
     private final Dice dice;
     private final MoveGenerator moveGenerator;
-    private final MoveExecutor moveExecutor;
+    private final CommandFactory commands;
     private final PathResolver pathResolver;
     private final GameListener log;
 
     public TurnEngine(Board board, Dice dice, MoveGenerator moveGenerator,
-            MoveExecutor moveExecutor, PathResolver pathResolver, GameListener log) {
+            CommandFactory commands, PathResolver pathResolver, GameListener log) {
         this.board = board;
         this.dice = dice;
         this.moveGenerator = moveGenerator;
-        this.moveExecutor = moveExecutor;
+        this.commands = commands;
         this.pathResolver = pathResolver;
         this.log = log;
     }
@@ -48,8 +46,9 @@ public final class TurnEngine {
     /** Rolls, moves, and keeps rolling for as long as Rules 4 and T-2 allow. */
     public void playTurn(Player player) {
         int consecutiveSixes = 0;
+        boolean rollAgain = true;
 
-        for (int rollNumber = 1; rollNumber <= GameRules.MAX_ROLLS_PER_TURN; rollNumber++) {
+        while (rollAgain) {
             int value = dice.roll();
             log.diceRolled(player.colour(), value);
 
@@ -67,55 +66,39 @@ public final class TurnEngine {
 
             boolean captured = playSingleRoll(player, value);
             // Rule T-2: "allowing the capturing player another roll as a bonus for capturing"
-            boolean earnedAnotherRoll = value == Dice.SIX || captured;
-            if (!earnedAnotherRoll || board.hasAllPiecesHome(player.colour())) {
-                // A player whose last piece has just reached home has nothing left to roll for.
-                return;
-            }
+            // A player whose last piece has just reached home has nothing left to roll for.
+            rollAgain = (value == Dice.SIX || captured) && !board.hasAllPiecesHome(player.colour());
         }
     }
 
     /**
-     * Uses one dice value: generate the legal moves, let the player choose, and carry it out.
+     * Uses one dice value: list the legal moves, let the player choose, and run the command for it.
      *
      * @return whether the move captured an opponent piece.
      */
     private boolean playSingleRoll(Player player, int value) {
         MoveOptions options = moveGenerator.optionsFor(player.colour(), value);
-        Optional<PlannedMove> chosen = player.chooseMove(options, value);
-        if (chosen.isPresent()) {
-            return applyMove(player, chosen.get());
-        }
-        return handleRollThatCannotBePlayed(player, options);
+        GameCommand command = player.chooseMove(options)
+                .map(commands::create)
+                .orElseGet(() -> commandForUnusableRoll(options));
+        return run(player, command);
     }
 
     /**
-     * Rules 7 and T-3: with nothing playable, the player either shuffles the blocked piece up to the
-     * cell before the block or loses the throw altogether.
+     * Rules 7 and T-3: with nothing playable, a blocked piece either moves up to the cell before the
+     * block or the throw is lost. A blocked piece that can still move up is preferred.
      */
-    private boolean handleRollThatCannotBePlayed(Player player, MoveOptions options) {
-        if (!options.hasBlockedAttempt()) {
-            return false;
-        }
-
-        // A blocked piece that can at least shuffle up to the block is preferred to one that cannot.
-        BlockedAttempt attempt = options.blockedAttempts().stream()
-                .filter(blocked -> blocked.partialMove().isPresent())
+    private GameCommand commandForUnusableRoll(MoveOptions options) {
+        return options.blockedAttempts().stream()
+                .sorted(Comparator.comparing(attempt -> attempt.partialMove().isEmpty()))
                 .findFirst()
-                .orElse(options.blockedAttempts().get(0));
-        log.pieceIsBlocked(attempt);
-        if (attempt.partialMove().isPresent()) {
-            PlannedMove partialMove = attempt.partialMove().get();
-            log.blockedButMovedUpToTheBlock(player.colour(), partialMove);
-            return applyMove(player, partialMove);
-        }
-        log.blockedWithNothingElseToMove(player.colour());
-        return false;
+                .map(commands::createForBlocked)
+                .orElseGet(commands::noMove);
     }
 
-    private boolean applyMove(Player player, PlannedMove move) {
-        boolean captured = moveExecutor.execute(move);
-        player.onMoveExecuted(move);
+    private boolean run(Player player, GameCommand command) {
+        boolean captured = command.execute();
+        command.playedMove().ifPresent(player::onMoveExecuted);
         return captured;
     }
 
@@ -148,10 +131,6 @@ public final class TurnEngine {
 
         for (Square blockade : blockades) {
             List<Piece> pieces = board.groupOn(blockade, player.colour());
-            if (pieces.size() < Board.MINIMUM_BLOCK_SIZE) {
-                // An earlier break-up in this same turn has already dissolved this blockade.
-                continue;
-            }
             breakUpBlockade(player, pieces);
         }
     }
@@ -167,9 +146,8 @@ public final class TurnEngine {
         for (int index = 0; index < leaving.size(); index++) {
             Piece piece = leaving.get(index);
             int units = shares.get(index);
-            Optional<PlannedMove> move =
-                    moveGenerator.forcedMove(piece, piece.initialDirection(), units);
-            move.ifPresent(forcedMove -> applyMove(player, forcedMove));
+            moveGenerator.forcedMove(piece, piece.initialDirection(), units)
+                    .ifPresent(forcedMove -> run(player, commands.create(forcedMove)));
         }
     }
 

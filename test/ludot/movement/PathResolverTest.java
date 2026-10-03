@@ -212,4 +212,14 @@ class PathResolverTest {
 
         assertEquals(Square.ring(6), resolver.destinationIgnoringBlocks(piece, Direction.CLOCKWISE, 6));
     }
+
+    @Test
+    void aPieceMayStopExactlyOnItsApproachCell() {
+        // Rule 9: only the cells after the approach cell are in the home straight
+        Piece piece = place(board, PieceColour.YELLOW, 1, 48, Direction.CLOCKWISE, 1);
+
+        PathResolver.Walk walk = resolver.walk(piece, Direction.CLOCKWISE, 2);
+
+        assertEquals(Square.ring(50), walk.destination().orElseThrow());
+    }
 }

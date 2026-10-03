@@ -99,7 +99,7 @@ public final class MysteryCell {
         return fullRoundsWithPiecesOnPath >= ROUNDS_BEFORE_FIRST_SPAWN ? spawn() : OptionalInt.empty();
     }
 
-    /** Picks a fresh home for the mystery cell, or leaves it off the board if none is free. */
+    /** Picks a fresh, empty cell for the mystery cell, never the one it has just left. */
     private OptionalInt spawn() {
         List<Integer> candidates = new ArrayList<>();
         for (int cell = 0; cell < BoardGeometry.RING_SIZE; cell++) {
@@ -107,9 +107,7 @@ public final class MysteryCell {
                 candidates.add(cell);
             }
         }
-        if (candidates.isEmpty()) {
-            return OptionalInt.empty();
-        }
+        // At most 16 pieces stand on the 52 cells, so a free cell always exists.
         currentCell = randomSource.pick(candidates);
         roundsRemaining = LIFETIME_IN_ROUNDS;
         return OptionalInt.of(currentCell);

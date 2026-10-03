@@ -11,8 +11,8 @@ import java.util.List;
  * <em>"[Color X] does not have other pieces in the board to move instead of the blocked piece"</em>
  * and then either shuffle up to the cell before the block or ignore the throw. Keeping both lists in
  * one returned object lets the turn engine tell those two situations apart without asking the board
- * anything more: an empty {@code playableMoves} means "nothing else to move", and
- * {@link #hasBlockedAttempt()} then says whether a block was the reason.
+ * anything more: an empty {@code playableMoves} means "nothing else to move", and a non-empty
+ * {@code blockedAttempts} then says that a block was the reason.
  *
  * @param playableMoves   moves that fully satisfy the rules and may be chosen by the strategy.
  * @param blockedAttempts moves that an opponent block cut short (Rule T-3), kept for reporting and
@@ -25,7 +25,4 @@ public record MoveOptions(List<PlannedMove> playableMoves, List<BlockedAttempt> 
         blockedAttempts = List.copyOf(blockedAttempts);
     }
 
-    public boolean hasBlockedAttempt() {
-        return !blockedAttempts.isEmpty();
-    }
 }

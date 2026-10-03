@@ -19,15 +19,13 @@ import ludot.board.Direction;
 import ludot.board.Piece;
 import ludot.board.PieceColour;
 import ludot.board.Square;
-import ludot.movement.MoveExecutor;
+import ludot.command.CommandFactory;
 import ludot.movement.MoveGenerator;
 import ludot.movement.PathResolver;
 import ludot.mystery.MysteryCell;
 import ludot.mystery.MysteryEffectResolver;
-import ludot.player.BluePlayer;
-import ludot.player.GreenPlayer;
 import ludot.player.Player;
-import ludot.player.YellowPlayer;
+import ludot.player.PlayerFactory;
 import ludot.random.Coin;
 import ludot.random.Dice;
 import ludot.ui.GameListener;
@@ -43,11 +41,12 @@ class TurnEngineTest {
     private final MysteryCell mysteryCell = mock(MysteryCell.class);
     private final TurnEngine engine = new TurnEngine(board, dice,
             new MoveGenerator(board, pathResolver),
-            new MoveExecutor(board, new Coin(fixedRandom(0, true)), mysteryCell,
+            new CommandFactory(board, new Coin(fixedRandom(0, true)), mysteryCell,
                     mock(MysteryEffectResolver.class), listener),
             pathResolver, listener);
-    private final Player yellow = new YellowPlayer(board, pathResolver);
-    private final Player blue = new BluePlayer(board, pathResolver, mysteryCell);
+    private final PlayerFactory players = new PlayerFactory(board, pathResolver, mysteryCell);
+    private final Player yellow = players.create(PieceColour.YELLOW);
+    private final Player blue = players.create(PieceColour.BLUE);
 
     private void diceRolling(int first, int... rest) {
         Integer[] others = new Integer[rest.length];
@@ -116,7 +115,7 @@ class TurnEngineTest {
         place(board, PieceColour.GREEN, 4, 30, Direction.CLOCKWISE, 0);
         diceRolling(6, 6, 6);
 
-        engine.playTurn(new GreenPlayer(board, pathResolver));
+        engine.playTurn(players.create(PieceColour.GREEN));
 
         assertEquals(Square.ring(51), piece(board, PieceColour.GREEN, 1).square());
         assertEquals(Square.ring(5), piece(board, PieceColour.GREEN, 2).square());
@@ -210,5 +209,16 @@ class TurnEngineTest {
 
         assertTrue(board.hasAllPiecesHome(PieceColour.YELLOW));
         verify(dice, times(1)).roll();
+    }
+
+    @Test
+    void twoSixesAndThenAnotherNumberGiveExactlyThreeRolls() {
+        // Rule 4: B1 comes out (6), walks 13 -> 19 (6), then 19 -> 21 (2), and the turn ends
+        diceRolling(6, 6, 2, 5);
+
+        engine.playTurn(blue);
+
+        verify(dice, times(3)).roll();
+        assertEquals(Square.ring(21), piece(board, PieceColour.BLUE, 1).square());
     }
 }

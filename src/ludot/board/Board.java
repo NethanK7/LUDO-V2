@@ -158,6 +158,15 @@ public final class Board {
         return inPlay;
     }
 
+    /** An immutable snapshot of one player's pieces, for the end-of-round report. */
+    public PlayerStatus statusOf(PieceColour colour) {
+        List<PlayerStatus.PieceLocation> locations = piecesOf(colour).stream()
+                .map(piece -> new PlayerStatus.PieceLocation(piece.name(), piece.square().label()))
+                .toList();
+        return new PlayerStatus(colour, piecesInPlay(colour).size(), piecesInBase(colour).size(),
+                piecesAtHome(colour).size(), locations);
+    }
+
     /** Rule 11: a player wins once all four of its pieces have reached home. */
     public boolean hasAllPiecesHome(PieceColour colour) {
         return piecesAtHome(colour).size() == BoardGeometry.PIECES_PER_PLAYER;

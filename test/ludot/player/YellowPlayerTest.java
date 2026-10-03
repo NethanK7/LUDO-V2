@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ludot.board.Board;
 import ludot.board.Direction;
 import ludot.board.PieceColour;
-import ludot.movement.PathResolver;
 import ludot.movement.PlannedMove;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +16,7 @@ import org.junit.jupiter.api.Test;
 class YellowPlayerTest {
 
     private final Board board = new Board();
-    private final YellowPlayer yellow = new YellowPlayer(board, new PathResolver(board));
+    private final Player yellow = PlayerTestSupport.playerFor(board, PieceColour.YELLOW);
 
     @Test
     void aSixAlwaysEmptiesTheBaseEvenWhenACaptureIsOnOffer() {

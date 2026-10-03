@@ -82,10 +82,6 @@ public final class Piece {
         return square.isRing();
     }
 
-    public boolean isInHomeStraight() {
-        return square.isHomeStraight();
-    }
-
     public boolean isAtHome() {
         return square.isHome();
     }
@@ -159,8 +155,4 @@ public final class Piece {
         effects.clear();
     }
 
-    @Override
-    public String toString() {
-        return name + "@" + square.label();
-    }
 }

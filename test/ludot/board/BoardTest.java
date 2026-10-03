@@ -24,13 +24,6 @@ class BoardTest {
     }
 
     @Test
-    void piecesAreNamedByColourInitialAndNumber() {
-        List<String> names = board.piecesOf(PieceColour.RED).stream().map(Piece::name).toList();
-
-        assertEquals(List.of("R1", "R2", "R3", "R4"), names);
-    }
-
-    @Test
     void relocatingMovesThePieceAndKeepsTheIndexInStep() {
         Piece piece = piece(board, PieceColour.RED, 1);
 
@@ -94,5 +87,19 @@ class BoardTest {
 
         assertEquals(1, board.piecesInPlay(PieceColour.RED).size());
         assertFalse(board.hasAnyPieceOnRing());
+    }
+
+    @Test
+    void aStatusSnapshotCountsAndLabelsEveryPiece() {
+        place(board, PieceColour.RED, 1, 26, Direction.CLOCKWISE, 0);
+        board.relocate(piece(board, PieceColour.RED, 2), Square.home(PieceColour.RED));
+
+        PlayerStatus status = board.statusOf(PieceColour.RED);
+
+        assertEquals(1, status.piecesOnBoard());
+        assertEquals(2, status.piecesInBase());
+        assertEquals(1, status.piecesHome());
+        assertEquals(List.of("26", "Home", "Base", "Base"),
+                status.pieces().stream().map(PlayerStatus.PieceLocation::location).toList());
     }
 }

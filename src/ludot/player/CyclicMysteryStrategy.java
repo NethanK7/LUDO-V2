@@ -2,16 +2,14 @@ package ludot.player;
 
 import java.util.List;
 import java.util.Optional;
-import ludot.board.Board;
+import java.util.stream.IntStream;
 import ludot.board.BoardGeometry;
 import ludot.board.Direction;
-import ludot.board.PieceColour;
-import ludot.movement.PathResolver;
 import ludot.movement.PlannedMove;
 import ludot.mystery.MysteryCell;
 
 /**
- * Blue: "a random player that prioritises mystery cells" (Section 2.1.4).
+ * Blue's strategy: "a random player that prioritises mystery cells" (Section 2.1.4).
  *
  * <p>Blue is the only behaviour with memory. It "always moves in a cyclic manner. That is, if B1 is
  * moved in the current round, B2 is considered in the next and so on". The piece blue considers
@@ -30,7 +28,7 @@ import ludot.mystery.MysteryCell;
  *
  * <p>When the scheduled piece cannot move at all, the next piece in the cycle is used.
  */
-public final class BluePlayer extends Player {
+public final class CyclicMysteryStrategy implements PlayerStrategy {
 
     private static final int NO_PIECE = 0;
 
@@ -42,14 +40,12 @@ public final class BluePlayer extends Player {
     /** Number of the first piece blue moved this round, or {@link #NO_PIECE}. */
     private int firstPieceMovedThisRound = NO_PIECE;
 
-    public BluePlayer(Board board, PathResolver pathResolver, MysteryCell mysteryCell) {
-        super(PieceColour.BLUE, board, pathResolver);
+    public CyclicMysteryStrategy(MysteryCell mysteryCell) {
         this.mysteryCell = mysteryCell;
     }
 
-
     @Override
-    protected Optional<PlannedMove> selectMove(List<PlannedMove> options, int rollValue) {
+    public Optional<PlannedMove> chooseMove(List<PlannedMove> options) {
         for (int offset = 0; offset < BoardGeometry.PIECES_PER_PLAYER; offset++) {
             List<PlannedMove> movesOfPiece = movesOfPiece(options, pieceNumberAt(offset));
             Optional<PlannedMove> choice = preferredMoveOf(movesOfPiece);
@@ -105,13 +101,10 @@ public final class BluePlayer extends Player {
     }
 
     private Optional<PlannedMove> firstMoveInCycle(List<PlannedMove> options) {
-        for (int offset = 0; offset < BoardGeometry.PIECES_PER_PLAYER; offset++) {
-            List<PlannedMove> movesOfPiece = movesOfPiece(options, pieceNumberAt(offset));
-            if (!movesOfPiece.isEmpty()) {
-                return Optional.of(movesOfPiece.get(0));
-            }
-        }
-        return Optional.empty();
+        return IntStream.range(0, BoardGeometry.PIECES_PER_PLAYER)
+                .mapToObj(offset -> movesOfPiece(options, pieceNumberAt(offset)))
+                .flatMap(List::stream)
+                .findFirst();
     }
 
     private int pieceNumberAt(int offsetInCycle) {

@@ -3,10 +3,11 @@ package ludot;
 import java.io.PrintStream;
 import java.util.List;
 import ludot.board.Board;
+import ludot.command.CommandFactory;
 import ludot.game.FirstPlayerSelector;
+import ludot.game.GameResult;
 import ludot.game.LudoGame;
 import ludot.game.TurnEngine;
-import ludot.movement.MoveExecutor;
 import ludot.movement.MoveGenerator;
 import ludot.movement.PathResolver;
 import ludot.mystery.MysteryCell;
@@ -20,12 +21,16 @@ import ludot.random.SeededRandomSource;
 import ludot.ui.GameLog;
 
 /**
- * Wires the whole simulation together.
+ * The single, simple entry into the whole game (Facade pattern).
  *
- * <p>This is the one place in the program where objects are constructed, which is what allows every
- * other class to receive its collaborators through its constructor and to depend on nothing it did
- * not ask for. Because the source of randomness and the output stream are both parameters, a whole
- * game can be replayed exactly, or captured for inspection, without changing a single rule class.
+ * <p>Behind {@link #run()} sit about fifteen cooperating objects - the board, the rules, the four
+ * players, the dice, the mystery cell and the log. {@code Main} needs none of them: it builds this
+ * facade and calls {@code run()}.
+ *
+ * <p>This is also the one place where those objects are constructed, so every other class receives
+ * its collaborators through its constructor and depends on nothing it did not ask for. Because the
+ * source of randomness and the output stream are both parameters, a whole game can be replayed
+ * exactly, or captured for inspection, without changing a single rule class.
  */
 public final class LudoTSimulation {
 
@@ -44,23 +49,19 @@ public final class LudoTSimulation {
         MysteryEffectResolver mysteryEffectResolver =
                 new MysteryEffectResolver(board, randomSource, log);
         MoveGenerator moveGenerator = new MoveGenerator(board, pathResolver);
-        MoveExecutor moveExecutor =
-                new MoveExecutor(board, coin, mysteryCell, mysteryEffectResolver, log);
+        CommandFactory commands =
+                new CommandFactory(board, coin, mysteryCell, mysteryEffectResolver, log);
 
         TurnEngine turnEngine =
-                new TurnEngine(board, dice, moveGenerator, moveExecutor, pathResolver, log);
+                new TurnEngine(board, dice, moveGenerator, commands, pathResolver, log);
         List<Player> players = new PlayerFactory(board, pathResolver, mysteryCell).createAll();
 
         this.game = new LudoGame(board, players, turnEngine,
                 new FirstPlayerSelector(dice, log), mysteryCell, log);
     }
 
-    /** Convenience constructor: a reproducible game printed to standard output. */
-    public LudoTSimulation(long seed) {
-        this(new SeededRandomSource(seed), System.out);
-    }
-
-    public void run() {
-        game.play();
+    /** Plays one complete game, printing it as it goes, and returns how it ended. */
+    public GameResult run() {
+        return game.play();
     }
 }

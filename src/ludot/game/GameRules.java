@@ -53,13 +53,6 @@ public final class GameRules {
      */
     public static final int GRIDLOCK_ROUNDS = 50;
 
-    /**
-     * Another safety net. Rules 4 and T-2 both grant extra rolls, and although a chain of captures
-     * is naturally limited by the twelve opponent pieces on the board, a hard cap makes it
-     * impossible for one turn to run away.
-     */
-    public static final int MAX_ROLLS_PER_TURN = 24;
-
     /** Places 1st to 3rd decide the game; the remaining player is last by elimination. */
     public static final int PLACES_TO_DECIDE = 3;
 

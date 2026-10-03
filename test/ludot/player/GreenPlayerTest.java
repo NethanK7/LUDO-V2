@@ -10,7 +10,6 @@ import ludot.board.Board;
 import ludot.board.Direction;
 import ludot.board.PieceColour;
 import ludot.board.Square;
-import ludot.movement.PathResolver;
 import ludot.movement.PlannedMove;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class GreenPlayerTest {
 
     private final Board board = new Board();
-    private final GreenPlayer green = new GreenPlayer(board, new PathResolver(board));
+    private final Player green = PlayerTestSupport.playerFor(board, PieceColour.GREEN);
 
     @Test
     void formingABlockWithASixComesBeforeEmptyingTheBase() {

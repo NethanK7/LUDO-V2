@@ -10,8 +10,6 @@ import java.util.regex.Pattern;
 import ludot.LudoTSimulation;
 import ludot.random.SeededRandomSource;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Section 3.1 of the brief lists the messages the simulation must print. This test plays whole
@@ -83,13 +81,14 @@ class OutputMatchesBriefTest {
         return Pattern.compile(regex);
     }
 
-    @ParameterizedTest(name = "seed {0}")
-    @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-            21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40})
-    void everyPrintedLineIsOneOfTheRequiredMessages(long seed) {
-        for (String printed : transcript(seed).split("\n", -1)) {
-            boolean required = SECTION_3_1.stream().anyMatch(p -> p.matcher(printed).matches());
-            assertTrue(required, "not a Section 3.1 message: \"" + printed + "\"");
+    @Test
+    void everyPrintedLineOfFortyGamesIsOneOfTheRequiredMessages() {
+        for (long seed = 1; seed <= 40; seed++) {
+            for (String printed : transcript(seed).split("\n", -1)) {
+                boolean required = SECTION_3_1.stream().anyMatch(p -> p.matcher(printed).matches());
+                assertTrue(required, "seed " + seed + ", not a Section 3.1 message: \"" + printed
+                        + "\"");
+            }
         }
     }
 

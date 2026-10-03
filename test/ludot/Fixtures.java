@@ -5,13 +5,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
-import org.mockito.Answers;
 import ludot.board.Board;
 import ludot.board.Direction;
 import ludot.board.Piece;
 import ludot.board.PieceColour;
 import ludot.board.Square;
 import ludot.random.RandomSource;
+import org.mockito.Answers;
 
 /**
  * Board positions and test doubles shared by the unit tests.

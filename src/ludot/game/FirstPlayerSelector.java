@@ -28,13 +28,10 @@ public final class FirstPlayerSelector {
 
     /** The colour that will take the first turn. */
     public PieceColour determineFirstPlayer() {
-        List<PieceColour> contenders = new ArrayList<>(List.of(PieceColour.values()));
+        List<PieceColour> contenders = List.of(PieceColour.values());
         while (contenders.size() > 1) {
-            List<PieceColour> highestRollers = rollOffBetween(contenders);
-            if (highestRollers.size() == 1) {
-                return highestRollers.get(0);
-            }
-            contenders = highestRollers;
+            // Only the players who share the highest roll take part in the next roll-off.
+            contenders = rollOffBetween(contenders);
         }
         return contenders.get(0);
     }

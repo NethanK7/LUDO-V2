@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import ludot.board.Board;
@@ -56,7 +57,7 @@ class GameLogTest {
 
         log.diceRolled(PieceColour.RED, 6);
         log.movesToStartingPoint(piece);
-        log.playerPieceCounts(board, PieceColour.RED);
+        log.playerPieceCounts(board.statusOf(PieceColour.RED));
 
         assertEquals("red player rolled 6.\n"
                 + "red player moves piece R1 to the starting point.\n"
@@ -113,7 +114,7 @@ class GameLogTest {
         board.relocate(board.piecesOf(PieceColour.BLUE).get(1),
                 Square.homeStraight(PieceColour.BLUE, 2));
 
-        log.pieceLocations(board, PieceColour.BLUE);
+        log.pieceLocations(board.statusOf(PieceColour.BLUE));
 
         assertEquals("============================\n"
                 + "Location of pieces blue\n"
@@ -175,12 +176,24 @@ class GameLogTest {
             board.relocate(piece, Square.home(PieceColour.RED));
         }
 
-        log.gameGridlocked(812, 50, board);
+        log.gameGridlocked(812, 50, Arrays.stream(PieceColour.values()).map(board::statusOf).toList());
 
         assertEquals("\nNo piece has moved for 50 rounds: the blocks on the board leave no legal "
                 + "move, so the game ends after round 812.\n"
                 + "Unfinished: yellow with 0/4 pieces home\n"
                 + "Unfinished: blue with 0/4 pieces home\n"
+                + "Unfinished: green with 0/4 pieces home\n", printed());
+    }
+
+    @Test
+    void aGameStoppedAtTheSafetyLimit() {
+        log.gameStoppedAtRoundLimit(2000,
+                Arrays.stream(PieceColour.values()).map(board::statusOf).toList());
+
+        assertEquals("\nThe simulation reached its safety limit of 2000 rounds and was stopped.\n"
+                + "Unfinished: yellow with 0/4 pieces home\n"
+                + "Unfinished: blue with 0/4 pieces home\n"
+                + "Unfinished: red with 0/4 pieces home\n"
                 + "Unfinished: green with 0/4 pieces home\n", printed());
     }
 }

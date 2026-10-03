@@ -38,13 +38,6 @@ public final class PathResolver {
     /** Distance value meaning "this piece cannot reach home from where it currently stands". */
     public static final int UNREACHABLE = Integer.MAX_VALUE;
 
-    /**
-     * The longest journey any piece can face: two laps of the ring - a counter-clockwise piece must
-     * see its approach cell twice (Rule T-1) - plus the home straight, with a cell to spare.
-     */
-    private static final int MAXIMUM_JOURNEY_LENGTH =
-            2 * BoardGeometry.RING_SIZE + BoardGeometry.STEPS_FROM_APPROACH_TO_HOME + 1;
-
     /** How a walk ended. */
     public enum Outcome {
         /** The piece travelled the full requested distance. */
@@ -134,10 +127,6 @@ public final class PathResolver {
      * @param leader the piece whose position and approach-cell history the walk starts from.
      */
     public Walk walk(List<Piece> group, Piece leader, Direction direction, int steps) {
-        if (!leader.isInPlay() || direction == null || steps <= 0) {
-            return Walk.impossible();
-        }
-
         PieceColour colour = leader.colour();
         boolean entryEarned = group.stream().allMatch(Piece::hasEarnedHomeStraightEntry);
         int approachPasses = group.stream().mapToInt(Piece::approachPasses).min().orElse(0);
@@ -210,32 +199,21 @@ public final class PathResolver {
      * @return the number of cells to home, or {@link #UNREACHABLE} for a piece in its base or home.
      */
     public int distanceToHome(Piece piece) {
-        return piece.direction() == null ? UNREACHABLE : distanceToHome(piece, piece.direction());
-    }
-
-    /** The same measurement, but assuming the piece travelled in the given direction. */
-    public int distanceToHome(Piece piece, Direction direction) {
-        if (!piece.isInPlay() || direction == null) {
+        if (!piece.isInPlay()) {
             return UNREACHABLE;
         }
         Square current = piece.square();
         int approachArrivals = 0;
-        for (int steps = 1; steps <= MAXIMUM_JOURNEY_LENGTH; steps++) {
-            Optional<Square> nextStep = nextSquare(current, piece.colour(), direction,
-                    piece.approachPasses() + approachArrivals, true);
-            if (nextStep.isEmpty()) {
-                return UNREACHABLE;
-            }
-            Square next = nextStep.get();
-            if (next.isHome()) {
-                return steps;
-            }
-            if (next.isApproachCellOf(piece.colour())) {
+        int steps = 0;
+        while (!current.isHome()) {
+            current = nextSquare(current, piece.colour(), piece.direction(),
+                    piece.approachPasses() + approachArrivals, true).orElseThrow();
+            steps++;
+            if (current.isApproachCellOf(piece.colour())) {
                 approachArrivals++;
             }
-            current = next;
         }
-        return UNREACHABLE;
+        return steps;
     }
 
     /** Opponent pieces that would be captured by landing on {@code square} (Rules 6 and T-8). */

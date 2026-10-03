@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 import ludot.board.Direction;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 /** The dice, the coin of Rule T-1 and the seeded source of chance behind both. */
@@ -28,11 +27,14 @@ class RandomTest {
         verify(random, times(2)).nextInt(Dice.FACES);
     }
 
-    @RepeatedTest(50)
+    @Test
     void aRealRollIsAlwaysAFaceOfTheDice() {
-        int face = new Dice(new SeededRandomSource()).roll();
+        Dice dice = new Dice(new SeededRandomSource());
 
-        assertTrue(face >= 1 && face <= Dice.FACES, "rolled " + face);
+        for (int roll = 0; roll < 1000; roll++) {
+            int face = dice.roll();
+            assertTrue(face >= 1 && face <= Dice.FACES, "rolled " + face);
+        }
     }
 
     @Test

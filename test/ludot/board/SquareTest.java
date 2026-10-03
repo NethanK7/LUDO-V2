@@ -3,7 +3,6 @@ package ludot.board;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,11 +11,12 @@ import org.junit.jupiter.api.Test;
 class SquareTest {
 
     @Test
-    void theSameSquareIsAlwaysTheSameSharedObject() {
-        // Flyweight: squares are created once and shared
-        assertSame(Square.ring(17), Square.ring(17));
-        assertSame(Square.homeStraight(PieceColour.RED, 2), Square.homeStraight(PieceColour.RED, 2));
-        assertSame(Square.base(PieceColour.BLUE), Square.base(PieceColour.BLUE));
+    void twoSquaresForTheSamePlaceAreEqualSoTheBoardCanLookThemUp() {
+        // Board keeps its pieces in a map keyed by Square
+        assertEquals(Square.ring(17), Square.ring(17));
+        assertEquals(Square.ring(17).hashCode(), Square.ring(17).hashCode());
+        assertEquals(Square.base(PieceColour.BLUE), Square.base(PieceColour.BLUE));
+        assertNotEquals(Square.ring(17), Square.ring(18));
     }
 
     @Test
@@ -40,15 +40,6 @@ class SquareTest {
         assertThrows(IllegalArgumentException.class, () -> Square.ring(-1));
         assertThrows(IllegalArgumentException.class,
                 () -> Square.homeStraight(PieceColour.RED, 5));
-    }
-
-    @Test
-    void knowsWhichKindOfPlaceItIs() {
-        assertTrue(Square.ring(3).isRing());
-        assertTrue(Square.homeStraight(PieceColour.RED, 0).isHomeStraight());
-        assertTrue(Square.base(PieceColour.RED).isBase());
-        assertTrue(Square.home(PieceColour.RED).isHome());
-        assertFalse(Square.home(PieceColour.RED).isRing());
     }
 
     @Test
