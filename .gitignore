@@ -7,14 +7,9 @@ out/
 .idea/
 *.iml
 
-# Submission archives and reports
+# Submission archives and documentation
 *.zip
-REPORT.md
-report.md
-[Rr]eport*.md
-WALKTHROUGH.md
-walkthrough.md
-[Ww]alkthrough*.md
+*.md
 
 # Maven build output
 target/
