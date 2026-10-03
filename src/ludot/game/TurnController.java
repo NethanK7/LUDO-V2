@@ -22,16 +22,16 @@ public final class TurnController {
     private final SixSidedDie dice;
     private final MoveOptionFinder moveFinder;
     private final MoveCommandFactory commandFactory;
-    private final PathNavigator pathCalculator;
+    private final PathNavigator pathNavigator;
     private final GameEventReporter log;
 
     public TurnController(GameBoard board, SixSidedDie dice, MoveOptionFinder moveFinder,
-            MoveCommandFactory commandFactory, PathNavigator pathCalculator, GameEventReporter log) {
+            MoveCommandFactory commandFactory, PathNavigator pathNavigator, GameEventReporter log) {
         this.board = board;
         this.dice = dice;
         this.moveFinder = moveFinder;
         this.commandFactory = commandFactory;
-        this.pathCalculator = pathCalculator;
+        this.pathNavigator = pathNavigator;
         this.log = log;
     }
 
@@ -115,7 +115,7 @@ public final class TurnController {
     // T-6: the piece closest to home stays, the others leave.
     private List<GamePiece> selectPiecesLeavingBlockade(List<GamePiece> blockade) {
         List<GamePiece> ordered = new ArrayList<>(blockade);
-        ordered.sort(Comparator.comparingInt(pathCalculator::calculateDistanceToHome));
+        ordered.sort(Comparator.comparingInt(pathNavigator::calculateDistanceToHome));
         return ordered.subList(1, ordered.size());
     }
 }

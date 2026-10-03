@@ -1,5 +1,6 @@
 package ludot.movement;
 
+import static ludot.BoardFixtures.findPiece;
 import static ludot.BoardFixtures.place;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -115,6 +116,13 @@ class MoveOptionFinderTest {
         assertEquals(BoardSquare.ofRing(33), blockMove.getDestination());
         assertEquals(3, blockMove.getStepsTaken());
         assertEquals(2, blockMove.getGroupSize());
+
+        // The Alpha aura changes a lone piece's roll, but a block always uses the plain roll.
+        findPiece(board, PlayerColour.GREEN, 1).getEffects().applyAlphaAura(MovementModifier.DOUBLED);
+        CandidateMove energisedBlockMove =
+                findOnlyBlockMove(moveFinder.listAvailableMoves(PlayerColour.GREEN, 6));
+
+        assertEquals(3, energisedBlockMove.getStepsTaken());
     }
 
     @Test
@@ -185,6 +193,13 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.BLUE, 2, 28, TravelDirection.CLOCKWISE, 0);
 
         assertTrue(moveFinder.planForcedMove(piece, TravelDirection.CLOCKWISE, 4).isEmpty());
+        assertEquals(BoardSquare.ofRing(27),
+                moveFinder.planForcedMove(piece, TravelDirection.CLOCKWISE, 1).orElseThrow().getDestination());
+
+        // T-6 moves the piece by the fixed share even if it is attending a briefing or is energised.
+        piece.getEffects().beginBriefing();
+        piece.getEffects().applyAlphaAura(MovementModifier.DOUBLED);
+
         assertEquals(BoardSquare.ofRing(27),
                 moveFinder.planForcedMove(piece, TravelDirection.CLOCKWISE, 1).orElseThrow().getDestination());
     }

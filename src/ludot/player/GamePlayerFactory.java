@@ -19,6 +19,7 @@ import ludot.movement.CandidateMove;
 import ludot.movement.PathNavigator;
 import ludot.mystery.MysteryCellScheduler;
 import ludot.strategy.BlockInspector;
+import ludot.strategy.BlueMysteryStrategy;
 import ludot.strategy.MoveSelectionStrategy;
 import ludot.strategy.PreferenceChain;
 
@@ -26,12 +27,12 @@ import ludot.strategy.PreferenceChain;
 public final class GamePlayerFactory {
 
     private final GameBoard board;
-    private final PathNavigator pathCalculator;
+    private final PathNavigator pathNavigator;
     private final MysteryCellScheduler mysteryCell;
 
-    public GamePlayerFactory(GameBoard board, PathNavigator pathCalculator, MysteryCellScheduler mysteryCell) {
+    public GamePlayerFactory(GameBoard board, PathNavigator pathNavigator, MysteryCellScheduler mysteryCell) {
         this.board = board;
-        this.pathCalculator = pathCalculator;
+        this.pathNavigator = pathNavigator;
         this.mysteryCell = mysteryCell;
     }
 
@@ -58,10 +59,10 @@ public final class GamePlayerFactory {
     }
 
     private MoveSelectionStrategy buildRedStrategy(BlockInspector blocks) {
-        Comparator<CandidateMove> nearestHome = closestToHome(pathCalculator);
+        Comparator<CandidateMove> nearestHome = closestToHome(pathNavigator);
         Predicate<CandidateMove> avoidsBlocks = Predicate.not(blocks::endsInBlock);
         return PreferenceChain.builder()
-                .prefer(capturing(), victimClosestToHome(pathCalculator))
+                .prefer(capturing(), victimClosestToHome(pathNavigator))
                 .prefer(releasingFromBase(), listOrder())
                 .prefer(avoidsBlocks, nearestHome)
                 .prefer(anyMove(), nearestHome)
@@ -69,7 +70,7 @@ public final class GamePlayerFactory {
     }
 
     private MoveSelectionStrategy buildGreenStrategy(BlockInspector blocks) {
-        Comparator<CandidateMove> nearestHome = closestToHome(pathCalculator);
+        Comparator<CandidateMove> nearestHome = closestToHome(pathNavigator);
         Predicate<CandidateMove> keepsBlocks = Predicate.not(blocks::breaksBlock);
         Predicate<CandidateMove> formsNewBlock = blocks::formsNewBlock;
         return PreferenceChain.builder()
@@ -83,7 +84,7 @@ public final class GamePlayerFactory {
     }
 
     private MoveSelectionStrategy buildYellowStrategy() {
-        Comparator<CandidateMove> nearestHome = closestToHome(pathCalculator);
+        Comparator<CandidateMove> nearestHome = closestToHome(pathNavigator);
         return PreferenceChain.builder()
                 .prefer(releasingFromBase(), listOrder())
                 .prefer(capturingForTheFirstTime(), nearestHome)

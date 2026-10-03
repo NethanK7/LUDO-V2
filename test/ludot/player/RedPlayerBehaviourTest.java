@@ -47,6 +47,13 @@ class RedPlayerBehaviourTest {
         place(board, PlayerColour.RED, 1, 10, TravelDirection.CLOCKWISE, 0);
 
         assertTrue(chooseMoveFor(red, board, 6).isEnteringBoard());
+
+        // Red releases a piece even when that makes a block on X (releasing ranks above avoiding blocks).
+        place(board, PlayerColour.RED, 2, 26, TravelDirection.CLOCKWISE, 0);
+        CandidateMove release = chooseMoveFor(red, board, 6);
+
+        assertTrue(release.isEnteringBoard());
+        assertEquals(BoardSquare.ofRing(26), release.getDestination());
     }
 
     @Test

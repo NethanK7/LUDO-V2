@@ -28,7 +28,7 @@ public final class LudoSimulationFacade {
         ConsoleEventPrinter log = new ConsoleEventPrinter(out);
 
         GameBoard board = new GameBoard();
-        PathNavigator pathCalculator = new PathNavigator(board);
+        PathNavigator pathNavigator = new PathNavigator(board);
         MysteryCellScheduler mysteryCell = new MysteryCellScheduler(board, randomSource);
 
         SixSidedDie dice = new SixSidedDie(randomSource);
@@ -36,13 +36,13 @@ public final class LudoSimulationFacade {
 
         TeleportService teleporter =
                 new TeleportService(board, randomSource, log);
-        MoveOptionFinder moveFinder = new MoveOptionFinder(board, pathCalculator);
+        MoveOptionFinder moveFinder = new MoveOptionFinder(board, pathNavigator);
         MoveCommandFactory commands =
                 new MoveCommandFactory(board, coin, mysteryCell, teleporter, log);
 
         TurnController turnEngine =
-                new TurnController(board, dice, moveFinder, commands, pathCalculator, log);
-        List<GamePlayer> players = new GamePlayerFactory(board, pathCalculator, mysteryCell).createAll();
+                new TurnController(board, dice, moveFinder, commands, pathNavigator, log);
+        List<GamePlayer> players = new GamePlayerFactory(board, pathNavigator, mysteryCell).createAll();
 
         this.game = new GameController(board, players, turnEngine,
                 new StartingPlayerSelector(dice, log), mysteryCell, log);

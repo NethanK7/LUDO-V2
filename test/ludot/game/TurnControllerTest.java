@@ -35,16 +35,16 @@ import org.junit.jupiter.api.Test;
 class TurnControllerTest {
 
     private final GameBoard board = new GameBoard();
-    private final PathNavigator pathCalculator = new PathNavigator(board);
+    private final PathNavigator pathNavigator = new PathNavigator(board);
     private final SixSidedDie dice = mock(SixSidedDie.class);
     private final GameEventReporter listener = mock(GameEventReporter.class);
     private final MysteryCellScheduler mysteryCell = mock(MysteryCellScheduler.class);
     private final TurnController engine = new TurnController(board, dice,
-            new MoveOptionFinder(board, pathCalculator),
+            new MoveOptionFinder(board, pathNavigator),
             new MoveCommandFactory(board, new CoinToss(createFixedRandom(0, true)), mysteryCell,
                     mock(TeleportService.class), listener),
-            pathCalculator, listener);
-    private final GamePlayerFactory players = new GamePlayerFactory(board, pathCalculator, mysteryCell);
+            pathNavigator, listener);
+    private final GamePlayerFactory players = new GamePlayerFactory(board, pathNavigator, mysteryCell);
     private final GamePlayer yellow = players.create(PlayerColour.YELLOW);
     private final GamePlayer blue = players.create(PlayerColour.BLUE);
 

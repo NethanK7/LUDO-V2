@@ -1,4 +1,4 @@
-package ludot.player;
+package ludot.strategy;
 
 import java.util.List;
 import java.util.Optional;
@@ -7,7 +7,6 @@ import ludot.board.BoardSpecification;
 import ludot.board.TravelDirection;
 import ludot.movement.CandidateMove;
 import ludot.mystery.MysteryCellScheduler;
-import ludot.strategy.MoveSelectionStrategy;
 
 /** Blue (2.1.4): moves B1, B2, B3, B4 in turn, one step per round, and chases or avoids the mystery cell. */
 public final class BlueMysteryStrategy implements MoveSelectionStrategy {
@@ -51,7 +50,7 @@ public final class BlueMysteryStrategy implements MoveSelectionStrategy {
         }
     }
 
-    int getCycleStartNumber() {
+    public int getCycleStartNumber() {
         return cycleStartNumber;
     }
 

@@ -29,7 +29,7 @@ class RandomnessProviderTest {
 
     @Test
     void aRealRollIsAlwaysAFaceOfTheDice() {
-        SixSidedDie dice = new SixSidedDie(new SeededRandomnessProvider());
+        SixSidedDie dice = new SixSidedDie(new SeededRandomnessProvider(2026));
 
         for (int roll = 0; roll < 1000; roll++) {
             int face = dice.roll();

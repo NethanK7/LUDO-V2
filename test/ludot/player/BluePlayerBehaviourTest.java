@@ -13,6 +13,7 @@ import ludot.board.PlayerColour;
 import ludot.board.TravelDirection;
 import ludot.movement.CandidateMove;
 import ludot.mystery.MysteryCellScheduler;
+import ludot.strategy.BlueMysteryStrategy;
 import org.junit.jupiter.api.Test;
 
 /** Tests for blue's cycle and its mystery-cell choices. */

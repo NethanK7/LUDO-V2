@@ -46,14 +46,14 @@ class GameControllerTest {
     private static GameController createGame(long seed, GameEventReporter listener) {
         SeededRandomnessProvider random = new SeededRandomnessProvider(seed);
         GameBoard board = new GameBoard();
-        PathNavigator pathCalculator = new PathNavigator(board);
+        PathNavigator pathNavigator = new PathNavigator(board);
         MysteryCellScheduler mysteryCell = new MysteryCellScheduler(board, random);
         SixSidedDie dice = new SixSidedDie(random);
         MoveCommandFactory commands = new MoveCommandFactory(board, new CoinToss(random), mysteryCell,
                 new TeleportService(board, random, listener), listener);
-        TurnController turnEngine = new TurnController(board, dice, new MoveOptionFinder(board, pathCalculator),
-                commands, pathCalculator, listener);
-        return new GameController(board, new GamePlayerFactory(board, pathCalculator, mysteryCell).createAll(),
+        TurnController turnEngine = new TurnController(board, dice, new MoveOptionFinder(board, pathNavigator),
+                commands, pathNavigator, listener);
+        return new GameController(board, new GamePlayerFactory(board, pathNavigator, mysteryCell).createAll(),
                 turnEngine, new StartingPlayerSelector(dice, listener), mysteryCell, listener);
     }
 
@@ -139,10 +139,10 @@ class GameControllerTest {
         }).when(turnEngine).playTurn(any());
         SixSidedDie dice = mock(SixSidedDie.class);
         when(dice.roll()).thenReturn(6, 1, 1, 1);
-        PathNavigator pathCalculator = new PathNavigator(board);
+        PathNavigator pathNavigator = new PathNavigator(board);
         MysteryCellScheduler mysteryCell = new MysteryCellScheduler(board, new SeededRandomnessProvider(1));
         GameController game = new GameController(board,
-                new GamePlayerFactory(board, pathCalculator, mysteryCell).createAll(), turnEngine,
+                new GamePlayerFactory(board, pathNavigator, mysteryCell).createAll(), turnEngine,
                 new StartingPlayerSelector(dice, listener), mysteryCell, listener);
 
         GameOutcome result = game.play();
