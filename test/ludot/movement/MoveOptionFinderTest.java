@@ -21,7 +21,7 @@ class MoveOptionFinderTest {
 
     @Test
     void withEveryPieceInTheBaseOnlyASixCanBeUsed() {
-        AvailableMoves options = moveFinder.findOptions(PlayerColour.RED, 5);
+        AvailableMoves options = moveFinder.listAvailableMoves(PlayerColour.RED, 5);
 
         assertTrue(options.playableMoves().isEmpty());
         assertTrue(options.blockedMoves().isEmpty());
@@ -29,7 +29,7 @@ class MoveOptionFinderTest {
 
     @Test
     void aSixBringsTheLowestNumberedPieceOutOntoX() {
-        List<CandidateMove> moves = moveFinder.findOptions(PlayerColour.RED, 6).playableMoves();
+        List<CandidateMove> moves = moveFinder.listAvailableMoves(PlayerColour.RED, 6).playableMoves();
 
         assertEquals(1, moves.size());
         CandidateMove entry = moves.get(0);
@@ -43,7 +43,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.GREEN, 1, 26, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.GREEN, 2, 26, TravelDirection.CLOCKWISE, 0);
 
-        AvailableMoves options = moveFinder.findOptions(PlayerColour.RED, 6);
+        AvailableMoves options = moveFinder.listAvailableMoves(PlayerColour.RED, 6);
 
         assertTrue(options.playableMoves().isEmpty());
         BlockedMoveAttempt attempt = options.blockedMoves().get(0);
@@ -56,7 +56,7 @@ class MoveOptionFinderTest {
     void enteringOntoALoneOpponentCapturesIt() {
         place(board, PlayerColour.GREEN, 1, 26, TravelDirection.CLOCKWISE, 0);
 
-        CandidateMove entry = moveFinder.findOptions(PlayerColour.RED, 6).playableMoves().get(0);
+        CandidateMove entry = moveFinder.listAvailableMoves(PlayerColour.RED, 6).playableMoves().get(0);
 
         assertEquals("G1", entry.capturedPieces().get(0).getName());
     }
@@ -67,7 +67,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.RED, 1, 4, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 2, 4, TravelDirection.CLOCKWISE, 0);
 
-        AvailableMoves options = moveFinder.findOptions(PlayerColour.GREEN, 6);
+        AvailableMoves options = moveFinder.listAvailableMoves(PlayerColour.GREEN, 6);
 
         assertTrue(options.playableMoves().stream().noneMatch(move -> !move.isEnteringBoard()));
         BlockedMoveAttempt attempt = options.blockedMoves().get(0);
@@ -83,7 +83,7 @@ class MoveOptionFinderTest {
         GamePiece piece = place(board, PlayerColour.BLUE, 1, 25, TravelDirection.CLOCKWISE, 0);
         piece.getEffects().beginBriefing();
 
-        assertTrue(moveFinder.findOptions(PlayerColour.BLUE, 4).playableMoves().isEmpty());
+        assertTrue(moveFinder.listAvailableMoves(PlayerColour.BLUE, 4).playableMoves().isEmpty());
     }
 
     @Test
@@ -91,7 +91,7 @@ class MoveOptionFinderTest {
         GamePiece piece = place(board, PlayerColour.BLUE, 1, 7, TravelDirection.CLOCKWISE, 0);
         piece.getEffects().applyAlphaAura(MovementModifier.DOUBLED);
 
-        CandidateMove move = moveFinder.findOptions(PlayerColour.BLUE, 4).playableMoves().get(0);
+        CandidateMove move = moveFinder.listAvailableMoves(PlayerColour.BLUE, 4).playableMoves().get(0);
 
         assertEquals(BoardSquare.ofRing(15), move.getDestination());
         assertEquals(8, move.getStepsTaken());
@@ -102,7 +102,7 @@ class MoveOptionFinderTest {
         GamePiece piece = place(board, PlayerColour.BLUE, 1, 7, TravelDirection.CLOCKWISE, 0);
         piece.getEffects().applyAlphaAura(MovementModifier.HALVED);
 
-        assertTrue(moveFinder.findOptions(PlayerColour.BLUE, 1).playableMoves().isEmpty());
+        assertTrue(moveFinder.listAvailableMoves(PlayerColour.BLUE, 1).playableMoves().isEmpty());
     }
 
     @Test
@@ -110,7 +110,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.GREEN, 1, 30, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.GREEN, 2, 30, TravelDirection.CLOCKWISE, 0);
 
-        CandidateMove blockMove = findOnlyBlockMove(moveFinder.findOptions(PlayerColour.GREEN, 6));
+        CandidateMove blockMove = findOnlyBlockMove(moveFinder.listAvailableMoves(PlayerColour.GREEN, 6));
 
         assertEquals(BoardSquare.ofRing(33), blockMove.getDestination());
         assertEquals(3, blockMove.getStepsTaken());
@@ -123,7 +123,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.GREEN, 2, 30, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.GREEN, 3, 30, TravelDirection.CLOCKWISE, 0);
 
-        assertTrue(moveFinder.findOptions(PlayerColour.GREEN, 2).playableMoves().stream()
+        assertTrue(moveFinder.listAvailableMoves(PlayerColour.GREEN, 2).playableMoves().stream()
                 .noneMatch(CandidateMove::isBlockMove));
     }
 
@@ -132,7 +132,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.YELLOW, 1, 20, TravelDirection.CLOCKWISE, 1);
         place(board, PlayerColour.YELLOW, 2, 20, TravelDirection.COUNTER_CLOCKWISE, 1);
 
-        CandidateMove blockMove = findOnlyBlockMove(moveFinder.findOptions(PlayerColour.YELLOW, 6));
+        CandidateMove blockMove = findOnlyBlockMove(moveFinder.listAvailableMoves(PlayerColour.YELLOW, 6));
 
         assertEquals(TravelDirection.COUNTER_CLOCKWISE, blockMove.getDirection());
         assertEquals(BoardSquare.ofRing(17), blockMove.getDestination());
@@ -144,7 +144,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.YELLOW, 2, 20, TravelDirection.COUNTER_CLOCKWISE, 0);
         piece.setDirection(TravelDirection.COUNTER_CLOCKWISE);
 
-        CandidateMove single = moveFinder.findOptions(PlayerColour.YELLOW, 2).playableMoves().stream()
+        CandidateMove single = moveFinder.listAvailableMoves(PlayerColour.YELLOW, 2).playableMoves().stream()
                 .filter(move -> !move.isBlockMove())
                 .filter(move -> move.getPrimaryPiece() == piece)
                 .findFirst().orElseThrow();
@@ -160,7 +160,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.BLUE, 1, 12, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.BLUE, 2, 12, TravelDirection.CLOCKWISE, 0);
 
-        CandidateMove blockMove = findOnlyBlockMove(moveFinder.findOptions(PlayerColour.YELLOW, 4));
+        CandidateMove blockMove = findOnlyBlockMove(moveFinder.listAvailableMoves(PlayerColour.YELLOW, 4));
 
         assertEquals(BoardSquare.ofRing(12), blockMove.getDestination());
         assertEquals(2, blockMove.capturedPieces().size());
@@ -174,7 +174,7 @@ class MoveOptionFinderTest {
             place(board, PlayerColour.BLUE, number, 12, TravelDirection.CLOCKWISE, 0);
         }
 
-        assertTrue(moveFinder.findOptions(PlayerColour.YELLOW, 4).playableMoves().stream()
+        assertTrue(moveFinder.listAvailableMoves(PlayerColour.YELLOW, 4).playableMoves().stream()
                 .noneMatch(CandidateMove::isBlockMove));
     }
 
@@ -201,7 +201,7 @@ class MoveOptionFinderTest {
         place(board, PlayerColour.RED, 1, 10, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 2, 13, TravelDirection.CLOCKWISE, 0);
 
-        CandidateMove onToR2 = moveFinder.findOptions(PlayerColour.RED, 3).playableMoves().stream()
+        CandidateMove onToR2 = moveFinder.listAvailableMoves(PlayerColour.RED, 3).playableMoves().stream()
                 .filter(move -> move.getPrimaryPiece().getName().equals("R1"))
                 .findFirst().orElseThrow();
 
@@ -215,7 +215,7 @@ class MoveOptionFinderTest {
             place(board, PlayerColour.GREEN, number, 30, TravelDirection.CLOCKWISE, 0);
         }
 
-        CandidateMove blockMove = findOnlyBlockMove(moveFinder.findOptions(PlayerColour.GREEN, 6));
+        CandidateMove blockMove = findOnlyBlockMove(moveFinder.listAvailableMoves(PlayerColour.GREEN, 6));
 
         assertEquals(BoardSquare.ofRing(32), blockMove.getDestination());
         assertEquals(3, blockMove.getGroupSize());

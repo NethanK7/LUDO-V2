@@ -21,16 +21,16 @@ public final class TurnController {
     private final GameBoard board;
     private final SixSidedDie dice;
     private final MoveOptionFinder moveFinder;
-    private final MoveCommandFactory commands;
+    private final MoveCommandFactory commandFactory;
     private final PathNavigator pathCalculator;
     private final GameEventReporter log;
 
     public TurnController(GameBoard board, SixSidedDie dice, MoveOptionFinder moveFinder,
-            MoveCommandFactory commands, PathNavigator pathCalculator, GameEventReporter log) {
+            MoveCommandFactory commandFactory, PathNavigator pathCalculator, GameEventReporter log) {
         this.board = board;
         this.dice = dice;
         this.moveFinder = moveFinder;
-        this.commands = commands;
+        this.commandFactory = commandFactory;
         this.pathCalculator = pathCalculator;
         this.log = log;
     }
@@ -47,7 +47,7 @@ public final class TurnController {
 
             if (value == SixSidedDie.SIX) {
                 consecutiveSixes++;
-                if (consecutiveSixes == RuleConstants.MAX_CONSECUTIVE_SIXES) {
+                if (consecutiveSixes == RuleConstants.SIXES_THAT_END_A_TURN) {
                     handleThirdConsecutiveSix(player);
                     return;
                 }
@@ -62,9 +62,9 @@ public final class TurnController {
     }
 
     private boolean playSingleRoll(GamePlayer player, int value) {
-        AvailableMoves options = moveFinder.findOptions(player.getColour(), value);
+        AvailableMoves options = moveFinder.listAvailableMoves(player.getColour(), value);
         TurnCommand command = player.chooseMove(options)
-                .map(commands::create)
+                .map(commandFactory::create)
                 .orElseGet(() -> createCommandForUnusableRoll(options));
         return run(player, command);
     }
@@ -73,8 +73,8 @@ public final class TurnController {
         return options.blockedMoves().stream()
                 .sorted(Comparator.comparing(attempt -> attempt.partialMove().isEmpty()))
                 .findFirst()
-                .map(commands::createForBlocked)
-                .orElseGet(commands::createNoAction);
+                .map(commandFactory::createForBlocked)
+                .orElseGet(commandFactory::createNoAction);
     }
 
     private boolean run(GamePlayer player, TurnCommand command) {
@@ -85,7 +85,7 @@ public final class TurnController {
 
     private void releaseBriefedPiecesOnConsecutiveThrees(GamePlayer player, int value) {
         for (GamePiece piece : board.getPiecesOf(player.getColour())) {
-            piece.getEffects().observeRoll(value);
+            piece.getEffects().trackRoll(value);
             if (piece.getEffects().mustLeaveBriefingForBase()) {
                 log.reportBriefingEscape(piece);
                 board.relocate(piece, BoardSquare.ofBase(piece.getColour()));
@@ -108,7 +108,7 @@ public final class TurnController {
             GamePiece piece = leaving.get(index);
             int units = shares.get(index);
             moveFinder.planForcedMove(piece, piece.getInitialDirection(), units)
-                    .ifPresent(forcedMove -> run(player, commands.create(forcedMove)));
+                    .ifPresent(forcedMove -> run(player, commandFactory.create(forcedMove)));
         }
     }
 

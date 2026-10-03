@@ -22,7 +22,7 @@ public final class GameBoard {
     public GameBoard() {
         for (PlayerColour colour : PlayerColour.values()) {
             List<GamePiece> pieces = new ArrayList<>();
-            for (int number = 1; number <= BoardSpecification.PIECES_PER_PLAYER; number++) {
+            for (int number = 1; number <= BoardSpecification.PIECES_PER_COLOUR; number++) {
                 GamePiece piece = new GamePiece(colour, number);
                 pieces.add(piece);
                 getOccupantsAt(piece.getSquare()).add(piece);
@@ -101,15 +101,14 @@ public final class GameBoard {
     }
 
     public PlayerStatusSnapshot createSnapshot(PlayerColour colour) {
-        List<PlayerStatusSnapshot.PieceLocation> locations = getPiecesOf(colour).stream()
-                .map(piece -> new PlayerStatusSnapshot.PieceLocation(piece.getName(), piece.getSquare().getLabel()))
+        List<PlayerStatusSnapshot.PieceSnapshot> pieces = getPiecesOf(colour).stream()
+                .map(piece -> new PlayerStatusSnapshot.PieceSnapshot(piece.getName(), piece.getSquare()))
                 .toList();
-        return new PlayerStatusSnapshot(colour, getPiecesInPlay(colour).size(), getPiecesInBase(colour).size(),
-                getPiecesAtHome(colour).size(), locations);
+        return new PlayerStatusSnapshot(colour, pieces);
     }
 
     public boolean hasAllPiecesHome(PlayerColour colour) {
-        return getPiecesAtHome(colour).size() == BoardSpecification.PIECES_PER_PLAYER;
+        return getPiecesAtHome(colour).size() == BoardSpecification.PIECES_PER_COLOUR;
     }
 
     private List<GamePiece> getOccupantsAt(BoardSquare square) {

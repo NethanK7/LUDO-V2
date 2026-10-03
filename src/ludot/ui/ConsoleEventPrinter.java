@@ -16,7 +16,7 @@ import ludot.mystery.TeleportTarget;
 /** Prints every message in the exact wording of Section 3.1 of the brief. */
 public final class ConsoleEventPrinter implements GameEventReporter {
 
-    private static final String SEPARATOR = "============================";
+    private static final String DIVIDER = "============================";
     private static final String[] PLACES = {"1st", "2nd", "3rd", "4th"};
 
     private final PrintStream out;
@@ -166,18 +166,18 @@ public final class ConsoleEventPrinter implements GameEventReporter {
     @Override
     public void reportPieceCounts(PlayerStatusSnapshot status) {
         out.printf("%s player now has %d/%d on pieces on the board and %d/%d pieces on the base.%n",
-                status.colour().getDisplayName(), status.piecesOnBoard(),
-                BoardSpecification.PIECES_PER_PLAYER, status.piecesInBase(),
-                BoardSpecification.PIECES_PER_PLAYER);
+                status.colour().getDisplayName(), status.countOnBoard(),
+                BoardSpecification.PIECES_PER_COLOUR, status.countInBase(),
+                BoardSpecification.PIECES_PER_COLOUR);
     }
 
     @Override
     public void reportPieceLocations(PlayerStatusSnapshot status) {
-        out.println(SEPARATOR);
+        out.println(DIVIDER);
         out.printf("Location of pieces %s%n", status.colour().getDisplayName());
-        out.println(SEPARATOR);
-        for (PlayerStatusSnapshot.PieceLocation piece : status.pieces()) {
-            out.printf("Piece %s -> %s.%n", piece.pieceName(), piece.location());
+        out.println(DIVIDER);
+        for (PlayerStatusSnapshot.PieceSnapshot piece : status.pieces()) {
+            out.printf("Piece %s -> %s.%n", piece.name(), piece.square().getLabel());
         }
     }
 
@@ -195,9 +195,9 @@ public final class ConsoleEventPrinter implements GameEventReporter {
     @Override
     public void announceFinalStandings(List<PlayerColour> placings) {
         printBlankLine();
-        out.println(SEPARATOR);
+        out.println(DIVIDER);
         out.println("Final standings");
-        out.println(SEPARATOR);
+        out.println(DIVIDER);
         for (int index = 0; index < placings.size(); index++) {
             out.printf("%s place: %s%n", PLACES[index], placings.get(index).getDisplayName());
         }
@@ -221,9 +221,9 @@ public final class ConsoleEventPrinter implements GameEventReporter {
 
     private void listUnfinishedPlayers(List<PlayerStatusSnapshot> statuses) {
         for (PlayerStatusSnapshot status : statuses) {
-            if (!status.hasFinished()) {
+            if (!status.isFinished()) {
                 out.printf("Unfinished: %s with %d/%d pieces home%n", status.colour().getDisplayName(),
-                        status.piecesHome(), BoardSpecification.PIECES_PER_PLAYER);
+                        status.countAtHome(), BoardSpecification.PIECES_PER_COLOUR);
             }
         }
     }

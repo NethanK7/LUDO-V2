@@ -29,7 +29,7 @@ public final class PieceStatusEffects {
         this.consecutiveEscapeRolls = 0;
     }
 
-    public void observeRoll(int rollValue) {
+    public void trackRoll(int rollValue) {
         if (!isAttendingBriefing()) {
             return;
         }

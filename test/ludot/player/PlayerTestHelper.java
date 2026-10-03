@@ -21,6 +21,6 @@ final class PlayerTestHelper {
 
     static CandidateMove chooseMoveFor(GamePlayer player, GameBoard board, int roll) {
         MoveOptionFinder moveFinder = new MoveOptionFinder(board, new PathNavigator(board));
-        return player.chooseMove(moveFinder.findOptions(player.getColour(), roll)).orElseThrow();
+        return player.chooseMove(moveFinder.listAvailableMoves(player.getColour(), roll)).orElseThrow();
     }
 }

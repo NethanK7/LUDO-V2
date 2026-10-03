@@ -21,7 +21,7 @@ class BlockInspectorTest {
 
     private CandidateMove findOnlyMove(int roll, boolean blockMove) {
         List<CandidateMove> moves = new MoveOptionFinder(board, new PathNavigator(board))
-                .findOptions(PlayerColour.GREEN, roll).playableMoves().stream()
+                .listAvailableMoves(PlayerColour.GREEN, roll).playableMoves().stream()
                 .filter(move -> move.isBlockMove() == blockMove)
                 .toList();
         return moves.get(0);

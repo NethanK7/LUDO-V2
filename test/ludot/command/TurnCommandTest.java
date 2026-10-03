@@ -49,7 +49,7 @@ class TurnCommandTest {
 
     @Test
     void enteringTheBoardTossesACoinForTheDirection() {
-        CandidateMove entry = moveFinder.findOptions(PlayerColour.RED, 6).playableMoves().get(0);
+        CandidateMove entry = moveFinder.listAvailableMoves(PlayerColour.RED, 6).playableMoves().get(0);
 
         createCommandsTossing(false).create(entry).execute();
 
@@ -68,7 +68,7 @@ class TurnCommandTest {
         GamePiece victim = place(board, PlayerColour.GREEN, 1, 29, TravelDirection.CLOCKWISE, 2);
         victim.getEffects().applyAlphaAura(MovementModifier.DOUBLED);
         victim.setApproachPasses(1);
-        CandidateMove capture = moveFinder.findOptions(PlayerColour.RED, 3).playableMoves().get(0);
+        CandidateMove capture = moveFinder.listAvailableMoves(PlayerColour.RED, 3).playableMoves().get(0);
 
         boolean captured = createCommandsTossing(true).create(capture).execute();
 
@@ -85,7 +85,7 @@ class TurnCommandTest {
     @Test
     void aPlainMoveCapturesNothing() {
         place(board, PlayerColour.RED, 1, 26, TravelDirection.CLOCKWISE, 0);
-        CandidateMove move = moveFinder.findOptions(PlayerColour.RED, 3).playableMoves().get(0);
+        CandidateMove move = moveFinder.listAvailableMoves(PlayerColour.RED, 3).playableMoves().get(0);
 
         assertFalse(createCommandsTossing(true).create(move).execute());
         verify(listener).reportPieceMoved(move.movements().get(0));
@@ -98,7 +98,7 @@ class TurnCommandTest {
         GamePiece second = place(board, PlayerColour.YELLOW, 2, 10, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.BLUE, 1, 12, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.BLUE, 2, 12, TravelDirection.CLOCKWISE, 0);
-        CandidateMove blockMove = moveFinder.findOptions(PlayerColour.YELLOW, 4).playableMoves().stream()
+        CandidateMove blockMove = moveFinder.listAvailableMoves(PlayerColour.YELLOW, 4).playableMoves().stream()
                 .filter(CandidateMove::isBlockMove).findFirst().orElseThrow();
 
         createCommandsTossing(true).create(blockMove).execute();
@@ -113,7 +113,7 @@ class TurnCommandTest {
     void landingOnTheMysteryCellTeleportsThePiece() {
         GamePiece piece = place(board, PlayerColour.RED, 1, 26, TravelDirection.CLOCKWISE, 0);
         when(mysteryCell.isOn(BoardSquare.ofRing(30))).thenReturn(true);
-        CandidateMove move = moveFinder.findOptions(PlayerColour.RED, 4).playableMoves().get(0);
+        CandidateMove move = moveFinder.listAvailableMoves(PlayerColour.RED, 4).playableMoves().get(0);
 
         createCommandsTossing(true).create(move).execute();
 
@@ -124,7 +124,7 @@ class TurnCommandTest {
     void aPieceReachesHomeOnTheExactRoll() {
         GamePiece piece = placeOn(board, PlayerColour.RED, 1, BoardSquare.ofHomeStraight(PlayerColour.RED, 4),
                 TravelDirection.CLOCKWISE, 1);
-        CandidateMove move = moveFinder.findOptions(PlayerColour.RED, 1).playableMoves().get(0);
+        CandidateMove move = moveFinder.listAvailableMoves(PlayerColour.RED, 1).playableMoves().get(0);
 
         createCommandsTossing(true).create(move).execute();
 
@@ -136,7 +136,7 @@ class TurnCommandTest {
         GamePiece g1 = place(board, PlayerColour.GREEN, 1, 0, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 1, 4, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 2, 4, TravelDirection.CLOCKWISE, 0);
-        BlockedMoveAttempt attempt = moveFinder.findOptions(PlayerColour.GREEN, 6).blockedMoves().get(0);
+        BlockedMoveAttempt attempt = moveFinder.listAvailableMoves(PlayerColour.GREEN, 6).blockedMoves().get(0);
 
         TurnCommand command = createCommandsTossing(true).createForBlocked(attempt);
         command.execute();
@@ -152,7 +152,7 @@ class TurnCommandTest {
         GamePiece g1 = place(board, PlayerColour.GREEN, 1, 3, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 1, 4, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 2, 4, TravelDirection.CLOCKWISE, 0);
-        BlockedMoveAttempt attempt = moveFinder.findOptions(PlayerColour.GREEN, 2).blockedMoves().get(0);
+        BlockedMoveAttempt attempt = moveFinder.listAvailableMoves(PlayerColour.GREEN, 2).blockedMoves().get(0);
 
         TurnCommand command = createCommandsTossing(true).createForBlocked(attempt);
 
@@ -175,7 +175,7 @@ class TurnCommandTest {
     @Test
     void walkingOntoAlphaWithoutATeleportHasNoEffect() {
         GamePiece piece = place(board, PlayerColour.RED, 1, 4, TravelDirection.CLOCKWISE, 0);
-        CandidateMove move = moveFinder.findOptions(PlayerColour.RED, 3).playableMoves().get(0);
+        CandidateMove move = moveFinder.listAvailableMoves(PlayerColour.RED, 3).playableMoves().get(0);
 
         createCommandsTossing(true).create(move).execute();
 
@@ -187,7 +187,7 @@ class TurnCommandTest {
     @Test
     void enteringTheBoardOntoALoneOpponentCapturesIt() {
         GamePiece victim = place(board, PlayerColour.GREEN, 1, 26, TravelDirection.CLOCKWISE, 0);
-        CandidateMove entry = moveFinder.findOptions(PlayerColour.RED, 6).playableMoves().get(0);
+        CandidateMove entry = moveFinder.listAvailableMoves(PlayerColour.RED, 6).playableMoves().get(0);
 
         boolean captured = createCommandsTossing(true).create(entry).execute();
 

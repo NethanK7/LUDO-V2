@@ -5,9 +5,9 @@ public final class BoardSpecification {
 
     public static final int RING_SIZE = 52;
 
-    public static final int HOME_STRAIGHT_LENGTH = 5;
+    public static final int HOME_STRAIGHT_CELLS = 5;
 
-    public static final int PIECES_PER_PLAYER = 4;
+    public static final int PIECES_PER_COLOUR = 4;
 
     private static final int ALPHA_OFFSET_FROM_YELLOW_APPROACH = 9;
     private static final int BETA_OFFSET_FROM_YELLOW_APPROACH = 27;

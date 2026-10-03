@@ -55,9 +55,9 @@ class PieceStatusEffectsTest {
     void twoThreesInARowDuringABriefingSendThePieceToBase() {
         effects.beginBriefing();
 
-        effects.observeRoll(3);
+        effects.trackRoll(3);
         assertFalse(effects.mustLeaveBriefingForBase());
-        effects.observeRoll(3);
+        effects.trackRoll(3);
 
         assertTrue(effects.mustLeaveBriefingForBase());
     }
@@ -66,18 +66,18 @@ class PieceStatusEffectsTest {
     void anyOtherRollBreaksTheRunOfThrees() {
         effects.beginBriefing();
 
-        effects.observeRoll(3);
-        effects.observeRoll(5);
-        effects.observeRoll(3);
+        effects.trackRoll(3);
+        effects.trackRoll(5);
+        effects.trackRoll(3);
 
         assertFalse(effects.mustLeaveBriefingForBase());
     }
 
     @Test
     void threesRolledBeforeTheBriefingBeganDoNotCount() {
-        effects.observeRoll(3);
+        effects.trackRoll(3);
         effects.beginBriefing();
-        effects.observeRoll(3);
+        effects.trackRoll(3);
 
         assertFalse(effects.mustLeaveBriefingForBase());
     }

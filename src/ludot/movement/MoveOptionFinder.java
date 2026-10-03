@@ -22,7 +22,7 @@ public final class MoveOptionFinder {
         this.pathCalculator = pathCalculator;
     }
 
-    public AvailableMoves findOptions(PlayerColour colour, int rollValue) {
+    public AvailableMoves listAvailableMoves(PlayerColour colour, int rollValue) {
         List<CandidateMove> playable = new ArrayList<>();
         List<BlockedMoveAttempt> blocked = new ArrayList<>();
 
@@ -39,7 +39,7 @@ public final class MoveOptionFinder {
     }
 
     public Optional<CandidateMove> planForcedMove(GamePiece piece, TravelDirection direction, int steps) {
-        PathNavigator.Walk walk = pathCalculator.walk(piece, direction, steps);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, direction, steps);
         if (!walk.isCompleted()) {
             return Optional.empty();
         }
@@ -81,7 +81,7 @@ public final class MoveOptionFinder {
             }
 
             TravelDirection direction = getTravelDirection(piece);
-            PathNavigator.Walk walk = pathCalculator.walk(piece, direction, steps);
+            PathNavigator.WalkResult walk = pathCalculator.walk(piece, direction, steps);
             if (walk.isCompleted()) {
                 playable.add(createSinglePieceMove(MoveCategory.ADVANCE, piece, direction, walk));
             } else if (walk.getOutcome() == PathNavigator.Outcome.BLOCKED) {
@@ -103,7 +103,7 @@ public final class MoveOptionFinder {
 
             GamePiece leader = findDirectionLeader(block);
             TravelDirection direction = leader.getDirection();
-            PathNavigator.Walk walk = pathCalculator.walk(block, leader, direction, steps);
+            PathNavigator.WalkResult walk = pathCalculator.walk(block, leader, direction, steps);
             if (!walk.isCompleted()) {
                 continue;
             }
@@ -144,7 +144,7 @@ public final class MoveOptionFinder {
     }
 
     private CandidateMove createSinglePieceMove(MoveCategory type, GamePiece piece, TravelDirection direction,
-            PathNavigator.Walk walk) {
+            PathNavigator.WalkResult walk) {
         BoardSquare destination = walk.getDestination().orElseThrow();
         PieceTransition movement = new PieceTransition(piece, piece.getSquare(), destination, direction,
                 walk.getStepsTaken(), piece.getApproachPasses() + walk.getApproachArrivals());
@@ -153,7 +153,7 @@ public final class MoveOptionFinder {
     }
 
     private BlockedMoveAttempt createBlockedMove(GamePiece piece, TravelDirection direction, int steps,
-            PathNavigator.Walk walk) {
+            PathNavigator.WalkResult walk) {
         BoardSquare intendedDestination = pathCalculator.findDestinationIgnoringBlocks(piece, direction, steps);
         Optional<CandidateMove> partialMove = walk.getDestination()
                 .map(reached -> createSinglePieceMove(MoveCategory.PARTIAL_ADVANCE, piece, direction, walk));

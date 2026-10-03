@@ -47,7 +47,7 @@ class GamePlayerFactoryTest {
     void aPlayerNeverPlaysAMoveItsStrategyMadeUp() {
         GamePiece r1 = place(board, PlayerColour.RED, 1, 26, TravelDirection.CLOCKWISE, 0);
         AvailableMoves options = new MoveOptionFinder(board, new PathNavigator(board))
-                .findOptions(PlayerColour.RED, 3);
+                .listAvailableMoves(PlayerColour.RED, 3);
         CandidateMove invented = new CandidateMove(MoveCategory.ADVANCE, List.of(new PieceTransition(r1,
                 BoardSquare.ofRing(26), BoardSquare.ofRing(40), TravelDirection.CLOCKWISE, 14, 0)), List.of());
         GamePlayer player = new GamePlayer(PlayerColour.RED, legalMoves -> Optional.of(invented));

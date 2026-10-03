@@ -96,10 +96,10 @@ class GameBoardTest {
 
         PlayerStatusSnapshot status = board.createSnapshot(PlayerColour.RED);
 
-        assertEquals(1, status.piecesOnBoard());
-        assertEquals(2, status.piecesInBase());
-        assertEquals(1, status.piecesHome());
+        assertEquals(1, status.countOnBoard());
+        assertEquals(2, status.countInBase());
+        assertEquals(1, status.countAtHome());
         assertEquals(List.of("26", "Home", "Base", "Base"),
-                status.pieces().stream().map(PlayerStatusSnapshot.PieceLocation::location).toList());
+                status.pieces().stream().map(piece -> piece.square().getLabel()).toList());
     }
 }

@@ -21,7 +21,7 @@ public final class PathNavigator {
         IMPOSSIBLE
     }
 
-    public static final class Walk {
+    public static final class WalkResult {
 
         private final Outcome outcome;
         private final BoardSquare destination;
@@ -29,7 +29,7 @@ public final class PathNavigator {
         private final int approachArrivals;
         private final GamePiece blockingPiece;
 
-        private Walk(Outcome outcome, BoardSquare destination, int stepsTaken, int approachArrivals,
+        private WalkResult(Outcome outcome, BoardSquare destination, int stepsTaken, int approachArrivals,
                 GamePiece blockingPiece) {
             this.outcome = outcome;
             this.destination = destination;
@@ -62,8 +62,8 @@ public final class PathNavigator {
             return outcome == Outcome.COMPLETED;
         }
 
-        private static Walk createImpossible() {
-            return new Walk(Outcome.IMPOSSIBLE, null, 0, 0, null);
+        private static WalkResult createImpossible() {
+            return new WalkResult(Outcome.IMPOSSIBLE, null, 0, 0, null);
         }
     }
 
@@ -73,11 +73,11 @@ public final class PathNavigator {
         this.board = board;
     }
 
-    public Walk walk(GamePiece piece, TravelDirection direction, int steps) {
+    public WalkResult walk(GamePiece piece, TravelDirection direction, int steps) {
         return walk(List.of(piece), piece, direction, steps);
     }
 
-    public Walk walk(List<GamePiece> group, GamePiece leader, TravelDirection direction, int steps) {
+    public WalkResult walk(List<GamePiece> group, GamePiece leader, TravelDirection direction, int steps) {
         PlayerColour colour = leader.getColour();
         boolean entryEarned = group.stream().allMatch(GamePiece::hasEarnedHomeStraightEntry);
         int approachPasses = group.stream().mapToInt(GamePiece::getApproachPasses).min().orElse(0);
@@ -90,14 +90,14 @@ public final class PathNavigator {
             Optional<BoardSquare> nextStep = findNextSquare(current, colour, direction,
                     approachPasses + approachArrivals, entryEarned);
             if (nextStep.isEmpty()) {
-                return Walk.createImpossible();
+                return WalkResult.createImpossible();
             }
             BoardSquare next = nextStep.get();
 
             boolean isFinalStep = step == steps;
             Optional<GamePiece> blocker = findBlockerAt(next, colour, group.size(), isFinalStep);
             if (blocker.isPresent()) {
-                return new Walk(Outcome.BLOCKED, furthestReached, stepsToFurthestReached,
+                return new WalkResult(Outcome.BLOCKED, furthestReached, stepsToFurthestReached,
                         approachArrivals, blocker.get());
             }
 
@@ -109,7 +109,7 @@ public final class PathNavigator {
             stepsToFurthestReached = step;
         }
 
-        return new Walk(Outcome.COMPLETED, current, steps, approachArrivals, null);
+        return new WalkResult(Outcome.COMPLETED, current, steps, approachArrivals, null);
     }
 
     public BoardSquare findDestinationIgnoringBlocks(GamePiece piece, TravelDirection direction, int steps) {
@@ -163,7 +163,7 @@ public final class PathNavigator {
             int approachPasses, boolean entryEarned) {
         if (current.isHomeStraight()) {
             int nextCell = current.index() + 1;
-            return Optional.of(nextCell < BoardSpecification.HOME_STRAIGHT_LENGTH
+            return Optional.of(nextCell < BoardSpecification.HOME_STRAIGHT_CELLS
                     ? BoardSquare.ofHomeStraight(colour, nextCell)
                     : BoardSquare.ofHome(colour));
         }

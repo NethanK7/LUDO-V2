@@ -11,33 +11,25 @@ import ludot.ui.GameEventReporter;
 /** Factory Method: picks the right command for each situation. */
 public final class MoveCommandFactory {
 
-    private final GameBoard board;
-    private final CoinToss coin;
-    private final MysteryCellScheduler mysteryCell;
-    private final TeleportService teleporter;
-    private final GameEventReporter log;
+    private final CommandContext context;
 
     public MoveCommandFactory(GameBoard board, CoinToss coin, MysteryCellScheduler mysteryCell,
-            TeleportService teleporter, GameEventReporter log) {
-        this.board = board;
-        this.coin = coin;
-        this.mysteryCell = mysteryCell;
-        this.teleporter = teleporter;
-        this.log = log;
+            TeleportService mysteryTeleporter, GameEventReporter log) {
+        this.context = new CommandContext(board, coin, mysteryCell, mysteryTeleporter, log);
     }
 
     public TurnCommand create(CandidateMove move) {
         if (move.isEnteringBoard()) {
-            return new ReleaseFromBaseCommand(move, board, coin, mysteryCell, teleporter, log);
+            return new ReleaseFromBaseCommand(move, context);
         }
-        return new AdvancePieceCommand(move, board, mysteryCell, teleporter, log);
+        return new AdvancePieceCommand(move, context);
     }
 
     public TurnCommand createForBlocked(BlockedMoveAttempt attempt) {
         TurnCommand moveUpToTheBlock = attempt.partialMove()
                 .map(this::create)
                 .orElse(NoActionCommand.INSTANCE);
-        return new BlockedRollCommand(attempt, moveUpToTheBlock, log);
+        return new BlockedRollCommand(attempt, moveUpToTheBlock, context.log());
     }
 
     public TurnCommand createNoAction() {

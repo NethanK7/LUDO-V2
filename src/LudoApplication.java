@@ -1,4 +1,6 @@
+import java.util.OptionalLong;
 import ludot.LudoSimulationFacade;
+import ludot.random.RandomnessProvider;
 import ludot.random.SeededRandomnessProvider;
 
 /** Starts the simulation. An optional whole-number argument is used as the random seed. */
@@ -8,25 +10,28 @@ public final class LudoApplication {
     }
 
     public static void main(String[] args) {
-        SeededRandomnessProvider randomSource;
-        try {
-            randomSource = args.length > 0
-                    ? new SeededRandomnessProvider(parseSeed(args[0]))
-                    : new SeededRandomnessProvider();
-        } catch (IllegalArgumentException invalidSeed) {
-            System.err.println(invalidSeed.getMessage());
+        if (args.length == 0) {
+            play(new SeededRandomnessProvider());
+            return;
+        }
+        OptionalLong seed = readSeed(args[0]);
+        if (seed.isEmpty()) {
+            System.err.println("The seed must be a whole number, but was: \"" + args[0] + "\"");
             System.err.println("Usage: java -cp out LudoApplication [seed]");
             return;
         }
-        new LudoSimulationFacade(randomSource, System.out).run();
+        play(new SeededRandomnessProvider(seed.getAsLong()));
     }
 
-    static long parseSeed(String argument) {
+    private static OptionalLong readSeed(String text) {
         try {
-            return Long.parseLong(argument.trim());
+            return OptionalLong.of(Long.parseLong(text.trim()));
         } catch (NumberFormatException notANumber) {
-            throw new IllegalArgumentException(
-                    "The seed must be a whole number, but was: \"" + argument + "\"", notANumber);
+            return OptionalLong.empty();
         }
+    }
+
+    private static void play(RandomnessProvider randomness) {
+        new LudoSimulationFacade(randomness, System.out).run();
     }
 }

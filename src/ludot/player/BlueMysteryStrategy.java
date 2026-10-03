@@ -16,7 +16,7 @@ public final class BlueMysteryStrategy implements MoveSelectionStrategy {
 
     private final MysteryCellScheduler mysteryCell;
 
-    private int scheduledPieceNumber = 1;
+    private int cycleStartNumber = 1;
 
     private int firstPieceMovedThisRound = NO_PIECE;
 
@@ -26,7 +26,7 @@ public final class BlueMysteryStrategy implements MoveSelectionStrategy {
 
     @Override
     public Optional<CandidateMove> chooseMove(List<CandidateMove> options) {
-        for (int offset = 0; offset < BoardSpecification.PIECES_PER_PLAYER; offset++) {
+        for (int offset = 0; offset < BoardSpecification.PIECES_PER_COLOUR; offset++) {
             List<CandidateMove> movesOfPiece = findMovesOfPiece(options, getPieceNumberAt(offset));
             Optional<CandidateMove> choice = choosePreferredMove(movesOfPiece);
             if (choice.isPresent()) {
@@ -46,13 +46,13 @@ public final class BlueMysteryStrategy implements MoveSelectionStrategy {
     @Override
     public void finishRound() {
         if (firstPieceMovedThisRound != NO_PIECE) {
-            scheduledPieceNumber = firstPieceMovedThisRound % BoardSpecification.PIECES_PER_PLAYER + 1;
+            cycleStartNumber = firstPieceMovedThisRound % BoardSpecification.PIECES_PER_COLOUR + 1;
             firstPieceMovedThisRound = NO_PIECE;
         }
     }
 
-    int getScheduledPieceNumber() {
-        return scheduledPieceNumber;
+    int getCycleStartNumber() {
+        return cycleStartNumber;
     }
 
     private Optional<CandidateMove> choosePreferredMove(List<CandidateMove> movesOfPiece) {
@@ -73,14 +73,14 @@ public final class BlueMysteryStrategy implements MoveSelectionStrategy {
     }
 
     private Optional<CandidateMove> findFirstMoveInCycle(List<CandidateMove> options) {
-        return IntStream.range(0, BoardSpecification.PIECES_PER_PLAYER)
+        return IntStream.range(0, BoardSpecification.PIECES_PER_COLOUR)
                 .mapToObj(offset -> findMovesOfPiece(options, getPieceNumberAt(offset)))
                 .flatMap(List::stream)
                 .findFirst();
     }
 
     private int getPieceNumberAt(int offsetInCycle) {
-        return (scheduledPieceNumber - 1 + offsetInCycle) % BoardSpecification.PIECES_PER_PLAYER + 1;
+        return (cycleStartNumber - 1 + offsetInCycle) % BoardSpecification.PIECES_PER_COLOUR + 1;
     }
 
     private List<CandidateMove> findMovesOfPiece(List<CandidateMove> options, int pieceNumber) {

@@ -1,9 +1,8 @@
 package ludot.game;
 
-import java.util.Collections;
-import java.util.EnumMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import ludot.board.PlayerColour;
 import ludot.random.SixSidedDie;
@@ -35,13 +34,16 @@ public final class StartingPlayerSelector {
     }
 
     private List<PlayerColour> rollOffBetween(List<PlayerColour> contenders) {
-        Map<PlayerColour, Integer> rolls = new EnumMap<>(PlayerColour.class);
+        List<Integer> values = new ArrayList<>();
         for (PlayerColour colour : contenders) {
             int value = dice.roll();
             log.reportOpeningRoll(colour, value);
-            rolls.put(colour, value);
+            values.add(value);
         }
-        int highest = Collections.max(rolls.values());
-        return contenders.stream().filter(colour -> rolls.get(colour) == highest).toList();
+        int best = values.stream().mapToInt(Integer::intValue).max().orElseThrow();
+        return IntStream.range(0, contenders.size())
+                .filter(index -> values.get(index) == best)
+                .mapToObj(contenders::get)
+                .toList();
     }
 }

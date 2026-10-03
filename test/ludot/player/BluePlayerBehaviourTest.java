@@ -49,7 +49,7 @@ class BluePlayerBehaviourTest {
 
         blue.finishRound();
 
-        assertEquals(2, cycle.getScheduledPieceNumber());
+        assertEquals(2, cycle.getCycleStartNumber());
         assertEquals("B2", chooseMoveFor(blue, board, 2).getPrimaryPiece().getName());
     }
 
@@ -62,14 +62,14 @@ class BluePlayerBehaviourTest {
         blue.finishRound();
 
         assertEquals("B2", choice.getPrimaryPiece().getName());
-        assertEquals(3, cycle.getScheduledPieceNumber());
+        assertEquals(3, cycle.getCycleStartNumber());
     }
 
     @Test
     void theCycleStaysPutInARoundWhereBlueMovedNothing() {
         blue.finishRound();
 
-        assertEquals(1, cycle.getScheduledPieceNumber());
+        assertEquals(1, cycle.getCycleStartNumber());
     }
 
     @Test

@@ -11,7 +11,7 @@ public record BoardSquare(Kind kind, PlayerColour owner, int index) {
     }
 
     public BoardSquare {
-        int size = kind == Kind.RING ? BoardSpecification.RING_SIZE : BoardSpecification.HOME_STRAIGHT_LENGTH;
+        int size = kind == Kind.RING ? BoardSpecification.RING_SIZE : BoardSpecification.HOME_STRAIGHT_CELLS;
         if ((kind == Kind.RING || kind == Kind.HOME_STRAIGHT) && (index < 0 || index >= size)) {
             throw new IllegalArgumentException(kind + " cell out of range: " + index);
         }

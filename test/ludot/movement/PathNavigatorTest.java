@@ -44,7 +44,7 @@ class PathNavigatorTest {
     void aPieceWithoutACaptureWalksStraightPastItsApproachCell() {
         GamePiece piece = place(board, PlayerColour.YELLOW, 1, 48, TravelDirection.CLOCKWISE, 0);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 3);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 3);
 
         assertEquals(BoardSquare.ofRing(51), walk.getDestination().orElseThrow());
     }
@@ -53,7 +53,7 @@ class PathNavigatorTest {
     void aPieceThatHasCapturedTurnsIntoItsHomeStraight() {
         GamePiece piece = place(board, PlayerColour.YELLOW, 1, 48, TravelDirection.CLOCKWISE, 1);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 3);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 3);
 
         assertEquals(BoardSquare.ofHomeStraight(PlayerColour.YELLOW, 0), walk.getDestination().orElseThrow());
         assertEquals(1, walk.getApproachArrivals());
@@ -63,7 +63,7 @@ class PathNavigatorTest {
     void aCounterClockwisePieceIgnoresItsFirstVisitToTheApproachCell() {
         GamePiece piece = place(board, PlayerColour.YELLOW, 1, 1, TravelDirection.COUNTER_CLOCKWISE, 1);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.COUNTER_CLOCKWISE, 4);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.COUNTER_CLOCKWISE, 4);
 
         assertEquals(BoardSquare.ofRing(49), walk.getDestination().orElseThrow());
     }
@@ -73,7 +73,7 @@ class PathNavigatorTest {
         GamePiece piece = place(board, PlayerColour.YELLOW, 1, 1, TravelDirection.COUNTER_CLOCKWISE, 1);
         piece.setApproachPasses(1);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.COUNTER_CLOCKWISE, 4);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.COUNTER_CLOCKWISE, 4);
 
         assertEquals(BoardSquare.ofHomeStraight(PlayerColour.YELLOW, 0), walk.getDestination().orElseThrow());
     }
@@ -94,7 +94,7 @@ class PathNavigatorTest {
         GamePiece piece = place(board, PlayerColour.GREEN, 1, 0, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 1, 3, TravelDirection.CLOCKWISE, 0);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 6);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 6);
 
         assertTrue(walk.isCompleted());
         assertEquals(BoardSquare.ofRing(6), walk.getDestination().orElseThrow());
@@ -106,7 +106,7 @@ class PathNavigatorTest {
         place(board, PlayerColour.RED, 1, 4, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 2, 4, TravelDirection.CLOCKWISE, 0);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 6);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 6);
 
         assertEquals(PathNavigator.Outcome.BLOCKED, walk.getOutcome());
         assertEquals(BoardSquare.ofRing(3), walk.getDestination().orElseThrow());
@@ -120,7 +120,7 @@ class PathNavigatorTest {
         place(board, PlayerColour.RED, 1, 4, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 2, 4, TravelDirection.CLOCKWISE, 0);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 2);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 2);
 
         assertEquals(PathNavigator.Outcome.BLOCKED, walk.getOutcome());
         assertTrue(walk.getDestination().isEmpty());
@@ -143,7 +143,7 @@ class PathNavigatorTest {
         place(board, PlayerColour.RED, 1, 2, TravelDirection.CLOCKWISE, 0);
         place(board, PlayerColour.RED, 2, 2, TravelDirection.CLOCKWISE, 0);
 
-        PathNavigator.Walk walk = pathCalculator.walk(List.of(first, second), first, TravelDirection.CLOCKWISE, 2);
+        PathNavigator.WalkResult walk = pathCalculator.walk(List.of(first, second), first, TravelDirection.CLOCKWISE, 2);
 
         assertTrue(walk.isCompleted());
         assertEquals(BoardSquare.ofRing(2), walk.getDestination().orElseThrow());
@@ -154,7 +154,7 @@ class PathNavigatorTest {
         GamePiece captured = place(board, PlayerColour.YELLOW, 1, 48, TravelDirection.CLOCKWISE, 1);
         GamePiece notCaptured = place(board, PlayerColour.YELLOW, 2, 48, TravelDirection.CLOCKWISE, 0);
 
-        PathNavigator.Walk walk =
+        PathNavigator.WalkResult walk =
                 pathCalculator.walk(List.of(captured, notCaptured), captured, TravelDirection.CLOCKWISE, 3);
 
         assertEquals(BoardSquare.ofRing(51), walk.getDestination().orElseThrow());
@@ -165,7 +165,7 @@ class PathNavigatorTest {
         GamePiece first = place(board, PlayerColour.YELLOW, 1, 48, TravelDirection.CLOCKWISE, 1);
         GamePiece second = place(board, PlayerColour.YELLOW, 2, 48, TravelDirection.CLOCKWISE, 1);
 
-        PathNavigator.Walk walk = pathCalculator.walk(List.of(first, second), first, TravelDirection.CLOCKWISE, 3);
+        PathNavigator.WalkResult walk = pathCalculator.walk(List.of(first, second), first, TravelDirection.CLOCKWISE, 3);
 
         assertEquals(BoardSquare.ofHomeStraight(PlayerColour.YELLOW, 0), walk.getDestination().orElseThrow());
     }
@@ -201,7 +201,7 @@ class PathNavigatorTest {
     void aPieceMayStopExactlyOnItsApproachCell() {
         GamePiece piece = place(board, PlayerColour.YELLOW, 1, 48, TravelDirection.CLOCKWISE, 1);
 
-        PathNavigator.Walk walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 2);
+        PathNavigator.WalkResult walk = pathCalculator.walk(piece, TravelDirection.CLOCKWISE, 2);
 
         assertEquals(BoardSquare.ofRing(50), walk.getDestination().orElseThrow());
     }
